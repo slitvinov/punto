@@ -16,8 +16,8 @@
  **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  ******************************************************************************/
 
-int ParseEvent(  SDL_Event *event);
-int CheckEvent(  SDL_Event *event);
-int NextEvent( SDL_Event *event );
+int ParseEvent(SDL_Event * event);
+int CheckEvent(SDL_Event * event);
+int NextEvent(SDL_Event * event);
 int CleanEvent();
-int EventLoop(  SDL_Event event,struct Window *w,struct Keys *);
+int EventLoop(SDL_Event event, struct Window *w, struct Keys *);

@@ -1,3 +1,4 @@
+.POSIX:
 DATADIR = dat
 S = src
 CC = c99
@@ -23,8 +24,6 @@ punto: dirs $O
 
 gen:	dirs $S/gen.o
 	$(CC) $S/gen.o $(M_LDFLAGS) -o bin/gen
-
-
 
 .c.o:
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $(M_CFLAGS) -c $< -o  $@

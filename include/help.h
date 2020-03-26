@@ -1,3 +1,3 @@
 #include <stdio.h>
 
-void Usage(char *ver,char *l_rev);
+void Usage(char *ver, char *l_rev);

@@ -10,4 +10,4 @@ void sigfpe_handler(int sig);
 void sigint_handler(int sig);
 void sigterm_handler(int sig);
 void sigquit_handler(int sig);
-void TakeEnv(char **envp,char *string,char *var);
+void TakeEnv(char **envp, char *string, char *var);
