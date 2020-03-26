@@ -1,9 +1,6 @@
-make #!/bin/bash
-#make mrproper
-#make punto
-#make gen
-#bin/gen
+#!/bin/sh
 
+bin/gen
 clear
 echo "command:>  bin/punto -c -r dat/aleatori03d.dat"
 echo "zoom in and out typing 'z' and 'Z'"

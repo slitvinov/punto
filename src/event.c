@@ -3,9 +3,6 @@
 #include "punto.h"
 #include "event.h"
 
-static void PrintKey(SDL_keysym * sym, int pressed);
-void print_modifiers(void);
-
 int
 ParseEvent(SDL_Event * event)
 {
@@ -389,79 +386,4 @@ EventLoop(SDL_Event event, struct Window *w, struct Keys *k)
         break;
     }
     return (status);
-}
-
-
-
-
-/**************************
-Only for debug
-
-***************************/
-
-
-static void
-PrintKey(SDL_keysym * sym, int pressed)
-{
-    /* Print the keycode, name and state */
-    if (sym->sym) {
-        printf("Key %s:  %d-%s ", pressed ? "pressed" : "released",
-               sym->sym, SDL_GetKeyName(sym->sym));
-    } else {
-        printf("Unknown Key (scancode = %d) %s ", (int) sym->scancode,
-               pressed ? "pressed" : "released");
-    }
-
-    /* Print the translated character, if one exists */
-    if (sym->unicode) {
-        /* Is it a control-character? */
-        if (sym->unicode < (Uint16) ' ') {
-            printf(" (^%c)", sym->unicode + '@');
-        } else {
-#ifdef UNICODE
-            printf(" (%c)", sym->unicode);
-#else
-            /* This is a Latin-1 program, so only show 8-bits */
-            if (!(sym->unicode & 0xFF00))
-                printf(" (%c)", sym->unicode);
-#endif
-        }
-    }
-    print_modifiers();
-    printf("\n");
-}
-
-void
-print_modifiers(void)
-{
-    int mod;
-
-    printf(" modifiers:");
-    mod = SDL_GetModState();
-    if (!mod) {
-        printf(" (none)");
-        return;
-    }
-    if (mod & KMOD_LSHIFT)
-        printf(" LSHIFT");
-    if (mod & KMOD_RSHIFT)
-        printf(" RSHIFT");
-    if (mod & KMOD_LCTRL)
-        printf(" LCTRL");
-    if (mod & KMOD_RCTRL)
-        printf(" RCTRL");
-    if (mod & KMOD_LALT)
-        printf(" LALT");
-    if (mod & KMOD_RALT)
-        printf(" RALT");
-    if (mod & KMOD_LMETA)
-        printf(" LMETA");
-    if (mod & KMOD_RMETA)
-        printf(" RMETA");
-    if (mod & KMOD_NUM)
-        printf(" NUM");
-    if (mod & KMOD_CAPS)
-        printf(" CAPS");
-    if (mod & KMOD_MODE)
-        printf(" MODE");
 }
