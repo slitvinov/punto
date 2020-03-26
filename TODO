@@ -1,0 +1,255 @@
+TODO
+======
+
+/***** version 1.0 ******/
+-help.
+-revisar PurgeSprites.
+-Comment all variables, structs, etc.
+	Duplicate the number of comments:
+		actualy ($grep "\/\*" src/*.c |wc   )
+		291 326
+		356 2155
+		327 2053
+		grep "\/\/" src/*.c |wc
+		106 119
+		258 1146
+		260 1225
+
+-Mejorar la opcion de purge SPrites. Estudiar la distribucion de la memoria
+-Implement rc file. check the puntorc functions
+-Simplify main function. 1142 lines (983,914,866,819)->500
+-?Join functions BoxProperties() and GetBox()
+- splint -weak -warnposix -nestcomment warnings: 49
+- Quitar variables globales.: (param),option,(zoom_size),
+- Reducir el numero de argumentos de las funciones (max 4)
+
+
+options:
+- standard command line function.(?)
+
+
+Controls:
+
+- c,C	cut by planes paralells to the screen.
+- make the scale a pixmap if its faster than redraw everything.
+- !!check the lenght of the data lines. max lenght is 4096 bytes.
+- !!check all the char array for buffer overrun.
+- DrawFile: files=SizeFile(name); // this function opens again the
+  file. look for another way.
+
+
+
+/***** version 1.1 ******/
+
+- paralelization of the functions TCR() and rapida() for two or more processors.
+- to revise rapida(), look for something faster in a almost ordered set.
+- multiplicative factor for the z axis.
+- add a second window with information: leds, colormap.
+- discard bad formed lines or import other datas
+- import xyz format
+- select puntos
+	-trace only over selected puntos.
+- to change the scale by a pixmap.
+- create pixmaps with the fonts?
+- couples of points, links.
+- add net suport.
+- mode zoom and navigation.
+X-Improve ReadBlock, its very slow.
+- change interactevily the color scale.
+	- logarithm scale
+- change interactevily the punto type.
+- loop animation mode
+
+
+/***** version 1.2 ******/
+
+
+/*  
+ time bin/punto -s 6  -w 1:1.01 -z 1:2:6 -B dat/plot.dat 
+ (785 particulas, 609 pasos)
+
+ all:                 14.719 s
+ ReadBlock:           10.419 s   objetivo=> 3 s
+ MovePuntos:           4.170 s
+ */ 
+
+
+
+BUGS 24
+=======
+-[BUG 01]-Doesnt work in 8 bpp
+-[BUG 05]-revision of the code.
+-?[BUG 15]if radio or color are negative numbers => segment fault. check the
+  sign and warn.
+
+DONE
+====
+version 0.04
+============
+
+X-(120303) decrease increments with Cntl
+X-(030303) diferent type of puntos:
+X-(030303)	disc
+X-(030303)	rectangle
+X-(030303) radio 
+X-(250303) Event filterUsage is: punto [-options] file 
+X-(230303) Draw the first Block.
+X-(260303)-n N1:N2	where N1 and N2 are integers starting from 0.
+		Only the puntos with labels between these numbers are plotted.
+X-(260303)-g XRESOxYRESO	width and height of the window.
+X-(260303)-d cs	where cs is the delay time between frames in centiseconds.
+X-(260303)-B 	plot a border box.
+X-(000203)-t 0,1,2	type of the bitmap displayed.
+ 	 0 display circles, 1 squares, 2 spheres (default).
+X-(260303)-bg color	set the background color. Default black.
+X-(260303)-fg color	set the foreground color. Default blue.
+X-(260303)-lc color	set the led and box color. Default green.
+
+
+version 0.05
+============
+
+X-(260303)-B 	plot a border box.
+X-(260303)-n N1:N2	where N1 and N2 are integers starting from 0.
+		Only the puntos with labels between these numbers are plotted.
+X-(260303)-g XRESOxYRESO	width and height of the window.
+X-(260303)-d cs	where cs is the delay time between frames in centiseconds.
+X-(260303)-bg color	set the background color. Default black.
+X-(260303)-fg color	set the foreground color. Default blue.
+X-(260303)-lc color	set the led and box color. Default green.
+X-(270303) Bug in -n n1:n2    static punto.
+X-(280303) space   step by step animation.
+
+version 0.06
+============
+X-(290303)-gradient scale
+X-(290303)-p num 	where num is the gradient palette. 
+ 	 0 spectrum (default), 1 red, 2 blue, 3 grey.
+
+X-(040403)-add fields
+X-(040403)-w [min:max]	as -c but the colors are reescaled between min and max values, 
+	useful if the color column has negative values.
+X-(040403)-V 	A vectorial field is plotted with arrows.
+X-(040403) F	Save only the current image.
+
+version 0.07
+============
+X-(050403)-[BUG 03]-Animation dont show the same puntos when the number changes
+	 dont show the firs block
+X-(050403)-[BUG 02]-reverse mode: cpu at the beggining.
+X-(050403) a	in vector mode changes among points, lines and arrows.
+X-(060403)- [BUG 04]-animation: goes farer than the last block.
+X-(060403) i,I	increase-decrease the size of puntos. (option -r must be activated.)
+X-(070403)-animation
+	delay between frames
+X-(080403)-save pixmaps
+X-(080403)-F fname set the default root filename for the saved pixmaps.
+ 		default temp.
+X-(080403)-S	Save mode on off. All the images are saved.
+X-(100403)- detectar si el archivo cambia
+X-(110403)- title of the window
+X-(230403)- trace mode
+
+version 0.08
+============
+X-(240403)-add box coordinates to option -B
+X-(070503)-imbuir el pixmap bola-32
+X-(150503)-added one font type.
+X-(160503)-Print the comments.
+X-(160503)-Rewrite ReadBlock.
+X-(170503)-added new font type.
+
+version 0.10
+============
+X-(101103)-all lines starting by a letter are comment lines
+X-(101103)-comments on-off.
+X-(101103)-add numbers to the scale.
+X-(111103)-trace mode, keep in memory. Show the last n frames.
+X-(121103)-specular images.
+X-(131103)-improve TCR3 when the angles are zero.
+
+version 0.11
+============
+
+X-(110305)-fast for-backward. jump in the file
+X-(110305)-add  a slice bar.
+X-(110305)- when delay exists doesnt work the space frame by frame advance.
+X-(110305) [BUG 06]-dont draw the last frame.
+X-(110305) [BUG 07]-go ahead the last block
+X-(110305) [BUG 08]- spin remains, put it to zero when keys up.
+X??- [BUG 09]- box frontiers in periodic images. Use the -B data.
+X-(110305) [BUG 10]- Revise PointNextLine. line starting by a letter are not comments.
+X-(110305) [BUG 11] PurgeSprites doesn't work -> desactivate
+X-(010705) [BUG 13] Si no existe fichero puntorc sale 
+
+version 1.00
+============
+
+X-(010405)- don't show the progress bar if the number of blocks < 2
+X-(050405)- liberar memoria de los tracepoints
+X-(070405)- En el ultimo bloque borde on/off
+X-(070405)- Verificar el seguir leyendo del archivo si este varia en tamaño.
+X-(070405)- long comand line options.
+X-(080405)- add option for the number of steps to keep in trace mode.
+X-(080405)- command line option for trace. (-trace n)
+X-(080405)- command line option for periodic. (-periodic )
+X-(090405)- Tener en cuenta la memoria de los trace al decidir si purgar sprites.
+X-(130405)- default options file:  .puntorc
+X-(130405)- G [min:max] 	as -cw but the colors are a gradient scale. 
+X-(140405) [BUG 12] Ghost z coordinate in trace points.
+
+============================== 201208 ===================
+X-(060409)- Solo ordenar si el tamaño es > 1
+X-(080509) Si no existe fichero puntorc no leerlo.
+
+======== version 1.0.03 =============
+X-(120509) 0 and . (dot) doesnt work in numeric keypad.
+X-(140509) [BUG 16] option -s 0 => segment fault
+X-(140509) Corregido -cr en el tutorial
+X-(140509) Minor changes in Arguments().
+X-(140509) Print info while reading file.
+X-(140509) Is an error indicate a column that doesnt exist in -z option.
+X-(140509) Function names translated to english.
+X-(140509) Arguments revisted.
+X-(140509) [BUG 17] punto -s 4 -B -G 0,0.5 -z 1:2:3:6 dat/fuente.dat No da error.
+      punto -s 4 -B -G 0:0.5 -z 1:2:3:6 dat/fuente.dat es lo correcto.
+X-(140509) Minor changes in help and TUTORIAL.
+X-(150509) [BUG 14] if the file ends in a comment line + CR punto hangs.
+X-(150509) Cambiar bcopy por memcpy.
+X-(150509) [BUG 18] punto -r -G  dat/fuente.dat
+  	ERROR: Argument of G not valid
+X-(200509) buffer de ReadLineB() interno a la funcion.
+X-(210509)revisar opcion -r [min:max]
+X-(210509)Arguments independent.
+Simplifying main() code:
+X-(220509) Added SetValues()
+X-(220509) Added BoxProperties()
+X-(220509) Added SetDimension()
+X-(220509) Added GetColumns()
+X-(220509) Added OrderOfColumns()
+X-(220509) Added GetBox()
+X-(250509) Added SetInitialValues()
+
+X-(220509) What is the -S option. Eliminated.
+X-(230509)[BUG 20] S,F save image segfault
+X-(260509) Added struct DataFile.
+X-(270509) dimension in struct Values.
+X-(280509) Added struct Universe.
+X-(280509) Split MovePuntos() and DrawPuntos().
+X-(050609) Added buffer.c buffer.h
+
+============== version 1.0.04 ============================
+X-(050609) added puntosize to struct Universe
+X-(050609) dzoom to DEFAULTZOOM.
+X-(050609) dfile remove from global, now in main.
+X-(060609) Quitar variables globales.: param
+X-(060609) added zoom_size to struct Universe.
+X-(060609) added dshift to struct Universe.
+X-(070609) [BUG 21] problem in GetFileName with large filenames.
+X-(090609) [BUG 22] if data file is empty  infinite loop in Countlines().
+X-(090609) [BUG 23] segfault when the window is resized. Added in version 1.0.03.
+X-(110609) CountLines() rewrited.
+X-(110609) Check GetBox().
+X-(110609) [BUG 19] bin/punto -r 0:100  -z -t :2:3:5 dat/fuente.dat (Exits without message)
+X-(120609) Arguments(): change atoi() with strtol(). Check for errors.
+X-(120609) [BUG 24] bin/punto -t dat/fuente.dat (Doesnt take default option for -t)

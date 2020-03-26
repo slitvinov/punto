@@ -1,0 +1,158 @@
+#!/bin/bash
+#make mrproper
+#make punto
+#make gen
+#bin/gen
+
+clear
+echo "command:>  bin/punto -c -r dat/aleatori03d.dat"
+echo "zoom in and out typing 'z' and 'Z'"
+echo "increase and decrease the size typing 'i' and 'I'"
+echo "'b' show-hide a border box"
+echo "rotate with 4,7 for x axe 5,8 for y and 6,9 for z"
+echo "type '0' for initial state "
+echo "type 'q' to continue"
+bin/punto -c -r dat/aleatori03d.dat > /dev/null 
+
+clear
+echo "command:>  bin/punto -r dat/red3d.dat"
+echo "The file red3d.dat has four columns, the 3-D coordinates and the size.
+Without options punto plot a 3D system with the default size."
+echo "type 'q' to continue"
+bin/punto -r dat/red3d.dat > /dev/null
+
+clear
+echo "command:>  bin/punto dat/deathstar.dat"
+echo "A 3D sphere formed by particles its plotted. "
+#Typing the key 'c' you
+#can cut by planes parallels to the screen point of view and look in the
+#inside. A fourth column is for the color."
+echo "type 'q' to continue"
+bin/punto -c dat/deathstar.dat > /dev/null
+
+clear
+echo "command:>  bin/punto dat/onda.dat" 
+echo "A 3D wave is plotted."
+echo "rotate the x axis typing '7'"
+echo "You can start-stop an animation typing
+'s'. Reverse it typing 'r'. "
+echo "type 'q' to continue"
+echo "You can change the default size of the particles with the option -s"
+bin/punto dat/onda.dat> /dev/null
+
+echo ""
+echo "command:> bin/punto -s 4 dat/onda.dat" 
+echo "type 't' to see some trace points of the trayectories"
+echo "type 'p' to see the periodic images"
+echo "type 'q' to continue"
+bin/punto -s 4 dat/onda.dat > /dev/null
+
+clear
+echo "command:>  bin/punto -c -r dat/fuente.dat"
+echo "The file dat/fuente.dat is a source of colored particles changing its size."
+
+echo "Type 's' or the left mouse-bottom or the up-arrow for start and stop
+the animation. 
+'space' for one-by-one slide. 
+left-arrow and right-arrow for change the delay between frames (this delay is
+initially set to zero). The down-arrow sets the delay to zero.
+'4-9' for rotating the axis. '0' for return for the initial point of
+view."
+bin/punto -c -r dat/fuente.dat > /dev/null
+
+#$punto -c -r -s 30 dat/fuente.dat
+
+
+
+
+clear
+echo "command:> bin/punto -c -s 6 dat/colors.dat"
+echo "The values of the color column must be an integer. There are 64 colors
+avalaible. These are the possible colors.
+colors.dat is a three columns file. Without the -c option punto
+interprets it as a three dimensional data file."
+echo ""
+echo "If your color column has no integers or you want to display an scalar field
+ its possible to plot them using the option -G, 
+in this case the value are rescaled between the minimum and maximum of the data 
+values of the first block."
+
+bin/punto -c -s 6 dat/colors.dat >/dev/null
+echo ""
+
+echo "command:> bin/punto -s 6 -B -G dat/colors.dat"
+echo ""
+echo "Change the order of the columns with the -z option,"
+bin/punto -s 6 -B -G dat/colors.dat>/dev/null
+
+echo ""
+echo "command:>  bin/punto -s 6 -G -z 1:2:1 dat/colors.dat"
+echo "This last command is interpreted as: two dimensional file, column 1
+	for x, column 2 for y coordinate and column 1 for the color."
+bin/punto -s 6 -G -z 1:2:1 dat/colors.dat>/dev/null
+
+echo ""
+echo "command:>  bin/punto -s 6 -G -z 1:2:1 -p 1 dat/colors.dat"
+echo "change the palette with the -p option, there are four avalaibles."
+
+bin/punto -s 6 -G -z 1:2:1 -p 1 dat/colors.dat>/dev/null
+
+clear
+
+echo "different types of puntos. option -t"
+echo "------------------------------------"
+echo "command:>  bin/punto -s 6 -G -z 1:2:1 -p 2 -t 0 dat/colors.dat"
+echo "there are three types of puntos: circles, squares, spheres"
+bin/punto -s 6 -G -z 1:2:1 -p 2 -t 0 dat/colors.dat>/dev/null
+
+echo "command:>  bin/punto -s 6 -G -z 1:2:1 -p 1 -t 1 dat/colors.dat"
+bin/punto -s 6 -G -z 1:2:1 -p 1 -t 1 dat/colors.dat>/dev/null
+
+echo "command:>  bin/punto -s 6 -G -z 1:2:1 -p 3 -t 2 dat/colors.dat"
+bin/punto -s 6 -G -z 1:2:1 -p 3 -t 2 dat/colors.dat>/dev/null
+
+clear
+
+echo "plotting vectorial fields"
+echo "-------------------------"
+echo ""
+echo "command:>  bin/punto -V dat/field2d.dat "
+
+echo "The file field2d.dat has four columns. With the -V option this columns
+are interpreted as x and y coordinates and the x and y values of a
+vectorial field."
+echo ""
+echo "Change the size of the field with the -s option,"
+bin/punto -V dat/field2d.dat >/dev/null
+
+echo ""
+echo "command:>  bin/punto -V -s 40 dat/field2d.dat"
+bin/punto -V -s 40 dat/field2d.dat >/dev/null
+
+echo ""
+echo "command:>  bin/punto -V dat/field3d.dat"
+echo "The file field3d.dat has six columns and is interpreted as 3D vectorial field."
+echo ""
+echo "type 'a' to change among arrows, lines or dots."
+echo "If the number of columns of your data file is different you always
+can choose the columns to be plotted with the option -z."
+bin/punto -V dat/field3d.dat > /dev/null
+
+echo "change the background and foreground colors:"
+echo "command:>  bin/punto -V -bg white -fg black dat/field3d.dat"
+bin/punto -V  -bg white -fg black dat/field3d.dat > /dev/null
+
+
+clear
+echo "I hope this program will be useful for you."
+echo "Send all comments, bugs and suggestions to,"
+echo "Mariano Revenga"
+echo "mrevenga@users.sourceforge.net"
+echo ""
+echo ""
+echo "to run this tutorial you must execute,"
+echo "make punto"
+echo "make gen"
+echo "./bin/gen"
+echo "and then,"
+echo "./TUTORIAL"
