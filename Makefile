@@ -16,8 +16,8 @@ $S/graphics-sdl.o\
 $S/help.o\
 $S/maths.o\
 $S/punto.o\
-$S/system.o\
 
+all: dirs clean punto gen
 punto: dirs $O
 	 $(CC) $O $(LDFLAGS) $(SDL_LDFLAGS) $(M_LDFLAGS) -o bin/punto
 
@@ -25,15 +25,12 @@ gen:	dirs $S/gen.o
 	$(CC) $S/gen.o $(M_LDFLAGS) -o bin/gen
 
 
-all: dirs clean punto gen
-
 
 .c.o:
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $(M_CFLAGS) -c $< -o  $@
 
 dirs:
-	mkdir -p bin
-	mkdir -p data
+	mkdir -p bin dat
 
 clean:
 	-rm -f $O bin/punto bin/gen
