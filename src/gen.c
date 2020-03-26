@@ -1,29 +1,11 @@
-/*****************************************************************************
- **  This is part of the punto program
- **  Copyleft (C) 1998-2009  Mariano Revenga
- **
- **  This program is free software; you can redistribute it and/or modify
- **  it under the terms of the GNU General Public License (version 2) as
- **  published by the Free Software Foundation.
- **
- **  This program is distributed in the hope that it will be useful,
- **  but WITHOUT ANY WARRANTY; without even the implied warranty of
- **  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- **  GNU General Public License for more details.
- **
- **  You should have received a copy of the GNU General Public License
- **  along with this program; if not, write to the Free Software
- **  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- ******************************************************************************/
-
-/* $Revision: 1.3 $
- */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
 #include<math.h>
 #define N 10000
 #define PI 3.14159265
+
+const char *me = "bin/gen";
 
 int main(){
   FILE *fp;
@@ -50,6 +32,10 @@ int main(){
     strcpy(name,DATADIR);
     strcat(name,"aleatori03d.dat");
     fp =fopen(name,"wt");
+    if (fp == NULL) {
+      fprintf(stderr, "%s: fail to open '%s'\n", me, name);
+      exit(2);
+    }
 
       for(i=0;i<800;i++){
 	fprintf(fp,"%f %f %f %f %d\n",

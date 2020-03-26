@@ -1,4 +1,4 @@
-#!/bin/bash
+make #!/bin/bash
 #make mrproper
 #make punto
 #make gen
