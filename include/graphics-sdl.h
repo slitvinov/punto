@@ -20,7 +20,6 @@ void FillCircleold(SDL_Surface * surface, int x0, int y0, int r,
 SDL_Surface *CreateBall(SDL_Surface * screen, Uint32 color, Uint32 bcolor,
                         int radio);
 SDL_Surface *CreateBall3D(SDL_Surface * screen, Uint32 color, int radio);
-Uint32 FastestFlags(Uint32 flags, int width, int height, int bpp);
 void DrawRectangle(SDL_Surface * surface, int x0, int y0, int x1, int y1,
                    Uint32 color);
 void FillRectangle(SDL_Surface * surface, int x0, int y0, int x1, int y1,
@@ -30,7 +29,5 @@ SDL_Surface *CreateRectangle(SDL_Surface * screen, Uint32 color,
 int DrawText(SDL_Surface * screen, char *text, int x, int y, Uint32 color);
 int DrawChar(SDL_Surface * screen, char **text, int x, int y,
              Uint32 color);
-SDL_Surface *MakeIcon(SDL_Surface * screen, SDL_Surface * icon,
-                      Uint32 color);
 
 int Sqrt(int x);

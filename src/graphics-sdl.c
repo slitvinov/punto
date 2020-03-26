@@ -495,40 +495,6 @@ CreateBall3D(SDL_Surface * screen, Uint32 color, int radio)
     return (sprite);
 }
 
-
-/* This is a way of telling whether or not to use hardware surfaces */
-Uint32
-FastestFlags(Uint32 flags, int width, int height, int bpp)
-{
-    const SDL_VideoInfo *info;
-
-    /* Hardware acceleration is only used in fullscreen mode */
-    flags |= SDL_FULLSCREEN;
-
-    /* Check for various video capabilities */
-    info = SDL_GetVideoInfo();
-    if (info->blit_hw_CC && info->blit_fill) {
-        /* We use accelerated colorkeying and color filling */
-        flags |= SDL_HWSURFACE;
-    }
-    /* If we have enough video memory, and will use accelerated
-       blits directly to it, then use page flipping.
-     */
-    if ((flags & SDL_HWSURFACE) == SDL_HWSURFACE) {
-        /* Direct hardware blitting without double-buffering
-           causes really bad flickering.
-         */
-        if ((int) (info->video_mem * 1024) > (height * width * bpp / 8)) {
-            flags |= SDL_DOUBLEBUF;
-        } else {
-            flags &= ~SDL_HWSURFACE;
-        }
-    }
-
-    /* Return the flags */
-    return (flags);
-}
-
 void
 DrawRectangle(SDL_Surface * surface, int x0, int y0, int x1, int y1,
               Uint32 color)
