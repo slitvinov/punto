@@ -3,12 +3,11 @@ BINDIR= ./bin/
 DATADIR= ./dat/
 SRCPATH= ./src/
 
-CC=gcc
+CC=c99
 CFLAGS=  -I$(INCLUDEDIR)  -O2 -g
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LDFLAGS = `sdl-config --libs`
-LDFLAGS= -L/usr/X11R6/lib -L/usr/lib -lX11 -lm -lpthread
-PROFFLAGS= -pg -I$(INCLUDEDIR)	-L/usr/X11R6/lib -L/usr/lib -lX11 -lm -lpthread
+M_LDFLAGS = -lm
 DFLAGS=
 AR=ar
 AFLAGS=rs
@@ -19,10 +18,7 @@ PROGRAMA_SRCS=$(SRCPATH)punto.c $(SRCPATH)maths.c $(SRCPATH)system.c $(SRCPATH)e
 
 REDUCE_OBJS=$(SRCPATH)reducedata.o $(SRCPATH)file.o
 punto: dirs $(PROGRAMA_OBJS)
-	 $(CC) $(PROGRAMA_OBJS) $(LDFLAGS) $(SDL_LDFLAGS) -o $(BINDIR)punto
-
-debug: dirs $(PROGRAMA_OBJS)
-	 $(CC) $(PROGRAMA_OBJS) -I$(INCLUDEDIR) $(LDFLAGS) -g -o debug
+	 $(CC) $(PROGRAMA_OBJS) $(LDFLAGS) $(SDL_LDFLAGS) $(M_LDFLAGS) -o $(BINDIR)punto
 
 gen:	dirs $(SRCPATH)gen.o
 	$(CC) -o $(BINDIR)gen $(SRCPATH)gen.o -lm
@@ -47,4 +43,3 @@ mrproper: clean
 	-rm -f bin/punto
 	-rm -f $(DATADIR)*.dat
 	-rm -f bin/gen
-	-rm -f ./debug
