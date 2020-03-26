@@ -328,8 +328,6 @@ int CountSprites(struct Sprite *b, int nmax);
 void InfoSprites(struct Sprite *b, struct Options opt);
 
 int NextBlock(float x, char *fname);
-SDL_NewTimerCallback Callback(Uint32 interval, void *param);
-
 
 /*** --funciones **/
 

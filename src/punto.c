@@ -622,14 +622,6 @@ main(int argc, char *argv[], char **env)
     kEOF = FALSE;
 
     time = time0 = SDL_GetTicks();
-    /* main program  loop */
-
-    //SDL_AddTimer(Uint32 interval, SDL_NewTimerCallback callback, void *param);
-    if (SDL_AddTimer(5000, (SDL_NewTimerCallback) Callback, 0) == NULL) {
-        fprintf(stderr, "Cant create a timer. SDL_AddTimer()\n");
-        exit(EXIT_FAILURE);
-    }
-
     while (!done) {
         float ishift;
         float inc_ang2;
@@ -2091,24 +2083,6 @@ NextBlock(float x, char *fn)
         return (0);
     return (cont - 1);
 
-}
-
-SDL_NewTimerCallback
-Callback(Uint32 interval, void *param)
-{
-
-    SDL_Event ev;
-
-
-    //ev.type=SDL_USEREVENT;
-    //ev.user.type=SDL_USEREVENT;
-    ev.type = SDL_USEREVENT;
-    ev.user.code = 0;
-    ev.user.data1 = NULL;
-    ev.user.data2 = NULL;
-
-    SDL_PushEvent(&ev);
-    return ((SDL_NewTimerCallback) interval);
 }
 
 /*  independent Functions */
