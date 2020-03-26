@@ -4,8 +4,6 @@
 #include "SDL.h"
 #include "graphics-sdl.h"
 #include "file.h"
-
-
 void ReadRGBColors(char *fname, struct RGBColor *color, int n);
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color * color);
 int Led1(SDL_Surface * screen, Uint32 color, int x, int y, int n);
