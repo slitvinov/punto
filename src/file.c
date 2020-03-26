@@ -1,14 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "punto.h"
 #include "file.h"
 #include "system.h"
 #include "buffer.h"
-
 
 void
 GetFileName(int argc, char *argv[], char *fname)

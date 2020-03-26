@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "buffer.h"
 
-
 long
 RChar(char *cad, FILE * fp)
 {

@@ -1,6 +1,5 @@
 #include "help.h"
 
-
 void
 Usage(char *ver, char *l_rev)
 {
