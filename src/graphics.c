@@ -513,13 +513,13 @@ WriteBitmap(SDL_Surface * bitmap, char *fpname)
     strcat(name, ".bmp");
 
     if (SDL_SaveBMP(bitmap, name) == -1) {
-        printf("Error saving bitmap\n");
+      fprintf(stderr, "Error saving bitmap\n");
     }
 
     if (save_cont < MAXNFILES)
         save_cont++;
     else {
-        fprintf(stdout, "Warning: maximun number of files reached.\n");
+        fprintf(stderr, "Warning: maximun number of files reached.\n");
     }
     //  save_cont++;
     printf("saved: %s\n", name);
