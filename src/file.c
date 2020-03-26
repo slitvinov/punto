@@ -578,7 +578,7 @@ Trim(char *cad)
         strncpy(word, &cad[cl], (size_t) (len - cl - cr));
     }
     word[len - cl - cr] = '\0';
-    strncpy(cad, word, strlen(word) + 1);
+    strcpy(cad, word);
     return (0);
 }
 

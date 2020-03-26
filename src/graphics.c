@@ -158,7 +158,7 @@ ReadRGBColors(char *fname, struct RGBColor *color, int n)
             len = strlen(name);
             if (len > MAX_WORD_LEN - 1)
                 len = MAX_WORD_LEN - 1;
-            strncat(color[i].name, name, len);
+            strcat(color[i].name, name);
         }
     }
     fclose(fp);
@@ -501,16 +501,16 @@ WriteBitmap(SDL_Surface * bitmap, char *fpname)
 
     strncpy(name, fpname, MAX_WORD_LEN);
     if (save_cont < 10)
-        strncat(number, "0", 1);
+        strcat(number, "0");
     if (save_cont < 100)
-        strncat(number, "0", 1);
+        strcat(number, "0");
     if (save_cont < 1000)
-        strncat(number, "0", 1);
+        strcat(number, "0");
     snprintf(num_file, 5, "%d", save_cont);
-    strncat(number, num_file, strlen(num_file));
+    strcat(number, num_file);
     // strncat(name,num_file,4);
-    strncat(name, number, 4);
-    strncat(name, ".bmp", 4);
+    strcat(name, number);
+    strcat(name, ".bmp");
 
     if (SDL_SaveBMP(bitmap, name) == -1) {
         printf("Error saving bitmap\n");
