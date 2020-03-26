@@ -101,6 +101,8 @@ EventLoop(SDL_Event event, struct Window *w, struct Keys *k)
     int status;
 
     static int block_a = FALSE;
+    int w0;
+    int h0;
 
     k->pressed = FALSE;
     status = FALSE;
@@ -113,10 +115,12 @@ EventLoop(SDL_Event event, struct Window *w, struct Keys *k)
         k->user = TRUE;
         break;
     case SDL_VIDEORESIZE:
-        w->shift.x += ((double) event.resize.w - w->w) / 2.;
-        w->shift.y += ((double) event.resize.h - w->h) / 2.;
-        w->w = event.resize.w;
-        w->h = event.resize.h;
+        w0 = event.resize.w;
+	h0 = event.resize.h;
+        w->shift.x += ((double)w0  - w->w) / 2.;
+        w->shift.y += ((double)h0 - w->h) / 2.;
+        w->w = w0;
+        w->h = h0;
 
         w->screen = SDL_SetVideoMode(w->w, w->h, (int) w->bpp, w->flags);
         status = TRUE;
