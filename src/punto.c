@@ -318,9 +318,6 @@ main(int argc, char *argv[], char **env)
         universe.psize = param.size;
     else
         (universe.psize = DEFAULTRADIO);
-
-    printf("radio: %d\n", universe.psize);
-
     for (i = 0; i < numactivados; ++i) {
         punto[i].active = 1;
     }
@@ -887,27 +884,15 @@ main(int argc, char *argv[], char **env)
         cont++;
 
     }                           /* while(done) */
-
-    /* --main program loop */
-
-
-    /*  Exiting... */
-
     for (i = 0; i < numsprites; i++) {
         if (bola[i].on == TRUE) {
             SDL_FreeSurface(bola[i].surface);
         }
     }
-
-    /* Print out some timing information */
     now = SDL_GetTicks();
-    if (now > then) {
-        printf("%2.2f frames per second\n",
-               ((double) frames * 1000) / (now - then));
-    }
     SDL_Quit();
     return (0);
-}                               /* main */
+}
 
 void
 DrawInfo(SDL_Surface * screen, struct Window win, struct Universe u,
@@ -2234,8 +2219,6 @@ Arguments(int argc, char *argv[], struct Options *opt,
                                 strlen(argv[i + 1]) - strlen(pointer));
                         par->min_r = (float) strtod(str, NULL);
                         par->max_r = (float) strtod(pointer + 1, NULL);
-                        printf("input radio: min  %g max %g \n",
-                               par->min_r, par->max_r);
                         i++;
                     }
                 }
@@ -2244,7 +2227,6 @@ Arguments(int argc, char *argv[], struct Options *opt,
                 if (strncmp("D", arg, MAX_WORD_LEN) == 0) { // Dimension
                     opt->dimension = TRUE;
                     par->dimension = (int) strtod(argv[i + 1], NULL);
-                    printf("dimension input %d\n", par->dimension);
                 }
                 break;
             case 'B':
@@ -2272,8 +2254,6 @@ Arguments(int argc, char *argv[], struct Options *opt,
                                 strlen(argv[i + 1]) - strlen(pointer));
                         par->min_c = (float) strtod(argv[i + 1], NULL);
                         par->max_c = (float) strtod(pointer + 1, NULL);
-                        printf("input color: min  %g max %g \n",
-                               par->min_c, par->max_c);
                         flag = 1;
                         i++;
                     }
@@ -2308,8 +2288,6 @@ Arguments(int argc, char *argv[], struct Options *opt,
                         if (par->max_f == 0 && pointer + 1 == endptr)
                             sw++;
                         if (sw == 0) {
-                            printf("input field: min  %g max %g \n",
-                                   par->min_f, par->max_f);
                             flag = 1;
                             opt->fieldcom = TRUE;
                         } else {
