@@ -371,8 +371,6 @@ ReadNBlocks(char *fname, struct Block *br, long fpos)
     indata = 0;
     nrbytes = 0;
 
-    printf("Reading file: %s \n", fname);
-
     do {
         file_pos += nrbytes;    //HERE ftell(fp);//-incpos;
 
@@ -384,14 +382,6 @@ ReadNBlocks(char *fname, struct Block *br, long fpos)
         type = AnalizeLine(line);
 
         if ((file_pos - nrbytes - file_pos0 > incfile_size)) {
-            fprintf(stdout, "\033[G[");
-            for (i = 0; i < 20; i++) {
-                if (i <= fcont)
-                    printf(".");
-                else
-                    printf(" ");
-            }
-            printf("]This make take a while...");
             fflush(stdout);
             file_pos0 = file_pos - nrbytes;
             fcont++;
@@ -414,7 +404,6 @@ ReadNBlocks(char *fname, struct Block *br, long fpos)
                 if (infile == 0) {  /* first block */
                     infile = 1;
                     lastb->pos = file_pos;
-                    //      printf("%d %ld %d\n",numblock,file_pos,incpos);
                 } else {        /* siguientes bloques */
                     numblock++;
                     lastb->next = CreateBlock();
@@ -425,7 +414,6 @@ ReadNBlocks(char *fname, struct Block *br, long fpos)
                     lastb->num = 0;
                     lastb->len = 0;
                     incomment = 0;
-                    //      printf("%d %ld %d\n",numblock,file_pos,incpos);
                 }
             }
         }
@@ -446,10 +434,7 @@ ReadNBlocks(char *fname, struct Block *br, long fpos)
         }
     }
     while (infile > 0);
-    printf("\n");
-
     fclose(fp);
-    //  printf("BYTES:%ld\n",ntbytes);
     return (numblock);
 }
 

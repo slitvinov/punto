@@ -186,7 +186,6 @@ main(int argc, char *argv[], char **env)
         if (ntrace < 0)
             ntrace = TRACE_DEFAULT;
     }
-    printf("number of trace dots: %d\n", ntrace);
 
     n_option_columns = 0;
     if (option.column == TRUE) {
@@ -233,7 +232,6 @@ main(int argc, char *argv[], char **env)
         perror("calloc");
         exit(EXIT_FAILURE);
     }
-    //  printf("asignando %ld a tabla\n",max_N);
 
     total_memory += max_N * (sizeof(struct Punto) + sizeof(long));
 
@@ -283,9 +281,6 @@ main(int argc, char *argv[], char **env)
             color_factor = (float) (MAX_NSCOLORS - 1) / t;
         else
             color_factor = 1;
-
-        printf("screen color range: %f  %f \n", val_run.min_c,
-               val_run.max_c);
     } else
         color_factor = 1;
 
@@ -298,87 +293,12 @@ main(int argc, char *argv[], char **env)
     }
     BoxProperties(val_data, param, option, box);    /* properties of the box */
     /* --box */
-
-
-    /* Print some info */
-
-    printf("data file : (%s)\n", dfile.name);
-    printf("Info data file:\n");
-    if (dfile.size > 2000000000) {
-        printf("\tSize: %.2f GB\n", (float) dfile.size / 1000000000);
-    } else {
-        if (dfile.size > 2000000) {
-            printf("\tSize: %.2f MB\n", (float) dfile.size / 1000000);
-        } else {
-            if (dfile.size > 2000) {
-                printf("\tSize: %.2f KB\n", (float) dfile.size / 1000);
-            } else {
-                printf("\tSize: %ld B\n", dfile.size);
-            }
-        }
-    }
-
-    printf("\tNumber of Blocks: %d\n", dfile.nblocks + 1);
-    printf
-        ("\tnumber of columns of the data file: %d \n\tNumber of particles of the first block: %ld\n",
-         dfile.ncol, N);
-    printf("dimension: %d\n", val_run.dimension);
-
-    if (option.column)
-        printf("number of columns in options: %d\n", n_option_columns);
-    printf("Using the next columns: \n\t");
-    if (pos.x < dfile.ncol)
-        printf("x:%d ", pos.x + 1);
-    if (pos.y < dfile.ncol)
-        printf("y:%d ", pos.y + 1);
-    if (pos.z < dfile.ncol)
-        printf("z:%d ", pos.z + 1);
-    if (pos.r < dfile.ncol)
-        printf("radio:%d ", pos.r + 1);
-    if (pos.c < dfile.ncol)
-        printf("color:%d ", pos.c + 1);
-    if (pos.vx < dfile.ncol)
-        printf("vx:%d ", pos.vx + 1);
-    if (pos.vy < dfile.ncol)
-        printf("vy:%d ", pos.vy + 1);
-    if (pos.vz < dfile.ncol)
-        printf("vz:%d ", pos.vz + 1);
-
-    printf("\n");
-
-    if (option.number == TRUE) {
-        printf("Plotting puntos from %ld to %ld\n", param.N1, param.N2);
-    }
-    printf("rad_min %g rad_max=%g\n", val_run.min_r, val_run.max_r);
-    printf("col_min %g col_max=%g\n", val_run.min_c, val_run.max_c);
-
-    printf("values in first data block:\n\tradio: min=%g max %g\n",
-           val_data.min_r, val_data.max_r);
-    printf("\tcolor: min=%g max %g\n", val_data.min_c, val_data.max_c);
-    printf("\tfield: min=%g max %g\n", val_data.min_f, val_data.max_f);
-    printf("\tbox:  (%g,%g,%g) , (%g,%g,%g) \n",
-           val_data.min_x, val_data.min_y, val_data.min_z,
-           val_data.max_x, val_data.max_y, val_data.max_z);
-
     if (option.verbose > 1) {
         printf("CM: %f %f %f\n", universe.cm.x, universe.cm.y,
                universe.cm.z);
         printf("Cv: %f %f %f\n", universe.cv.x, universe.cv.y,
                universe.cv.z);
     }
-
-    if (option.field)
-        printf("field data max: %f min: %f\n", val_data.max_f,
-               val_data.min_f);
-
-    if (option.box) {
-        //    printf("Box parametres: [%s]\n",param.boxstr);
-
-        printf("Using box values:  (%g,%g,%g) , (%g,%g,%g) \n",
-               box[3].x, box[3].y, box[3].z, box[5].x, box[5].y, box[5].z);
-    }
-    /* --Print some info */
-
     numsprites = (max_nsize + 1) * MAX_NSCOLORS;
     if ((bola =
          (struct Sprite *) malloc((size_t) (numsprites) *
