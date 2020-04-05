@@ -77,7 +77,6 @@ struct Parametres {
     struct Vector box;
 };
 
-
 char version[] = { "1.0.04" };
 char last_revision[] = { "Jun 2009" };
 
@@ -214,14 +213,12 @@ main(int argc, char *argv[], char **env)
     }
     dfile.size = SizeFile(dfile.name);
 
-    strcpy(title, ".    ");
+    strcpy(title, "");
     if (option.title == TRUE) {
         strncat(title, param.titlewindow, MAX_WORD_LEN);
     } else {
         strncat(title, dfile.name, MAX_WORD_LEN);
     }
-    strncat(title, "   v. ", MAX_WORD_LEN);
-    strncat(title, version, MAX_WORD_LEN);
 
     if (option.file == FALSE) {
         strncat(param.rootfilename, "temp_", 6);
