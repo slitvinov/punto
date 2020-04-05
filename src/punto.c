@@ -1576,25 +1576,17 @@ RangeOfValues(struct Punto *p, struct Options opt, struct Values *data)
         if (p[i].z < data->min_z)
             data->min_z = p[i].z;
     }
-
-}                               /* --function RangeOfValues */
-
+}
 
 int
 CountSprites(struct Sprite *b, int nmax)
 {
-    /* 
-       return the number of sprites. 
-     */
     int i;
     int cont = 0;
 
     for (i = 0; i < nmax; i++)
         if (b[i].on == TRUE)
             cont++;
-
-    //  printf("CountSprites;\n",b);
-
     return cont;
 }
 
