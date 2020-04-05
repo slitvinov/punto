@@ -34,9 +34,10 @@ Usage(char *ver, char *l_rev)
     (void) fprintf(stdout, "-r [min:max]\tthere is a column of radius.\n");
     (void) fprintf(stdout, "\t rescale between min and max values.\n");
     (void) fprintf(stdout, "-c \tthere is a column of colors.\n");
+    (void) fprintf(stdout, "-e \"fname\" save pixmap and exit.\n");
     (void) fprintf(stdout, "-w Obsolote. as -G.\n");
     //"-w [min:max]\tas -c but the colors are reescaled between min and max values, \n" );
-    //  (void) fprintf( stdout, 
+    //  (void) fprintf( stdout,
     //          "\tuseful if the color column has negative values.\n" );
     (void) fprintf(stdout,
                    "-G [min:max] \tThe colors are a gradient scale. \n");
@@ -95,7 +96,7 @@ Usage(char *ver, char *l_rev)
     (void) fprintf(stdout, "-(minus)\tdecrease delay between frames.\n");
     (void) fprintf(stdout,
                    ".(period)\tsets delay time to the initial value.\n");
-    //  (void) fprintf( stdout, 
+    //  (void) fprintf( stdout,
     //          "left mouse bottom   stops,starts animation.\n");
     (void) fprintf(stdout, "s   \tstops, starts animation.\n");
     (void) fprintf(stdout, "space   step by step animation.\n");

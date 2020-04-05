@@ -12,6 +12,71 @@
 #include "help.h"
 #include "buffer.h"
 
+struct Options {
+    short color;
+    short radio;
+    short geometria;
+    short number;
+    short box;
+    short comment;
+    short realsize;
+    short dimension;
+    short size;
+    short fast;
+    short cut;
+    short type;
+    short column;
+    short real_color;
+    short gradient;
+    short field;
+    short fieldcom;
+    short varfield;
+    short palette;
+    short verbose;
+    short back;
+    short fore;
+    short led;
+    short file;
+    short signal;
+    short sizebox;
+    short pausa;
+    short rotate;
+    short mode;
+    short anim;
+    short reverse;
+    short save;
+    short title;
+    short trace;
+    short ntrace;
+    short tracelines;
+    short periodic;
+    short exit;
+};
+
+
+struct Parametres {
+    char colstr[MAX_WORD_LEN];
+    char boxstr[MAX_WORD_LEN];
+    char backname[MAX_WORD_LEN];
+    char forename[MAX_WORD_LEN];
+    char ledname[MAX_WORD_LEN];
+    char rootfilename[MAX_WORD_LEN];
+    char titlewindow[MAX_WORD_LEN];
+    char path[MAX_WORD_LEN];
+
+    int size;
+    int pausa;
+    long N, N1, N2;
+    int ntrace;
+    int dimension;
+    int width, height;
+    float max_r, min_r;
+    float max_c, min_c;
+    float max_f, min_f;
+    float zoomz;
+    struct Vector box;
+};
+
 
 char version[] = { "1.0.04" };
 char last_revision[] = { "Jun 2009" };
@@ -161,7 +226,6 @@ main(int argc, char *argv[], char **env)
     if (option.file == FALSE) {
         strncat(param.rootfilename, "temp_", 6);
     } else {
-        //    strncat(param.rootfilename,filename,MAX_WORD_LEN);
         strncat(param.rootfilename, "_", 1);
     }
 
@@ -365,34 +429,6 @@ main(int argc, char *argv[], char **env)
     bgcolor = SDL_MapRGB(screen->format, 0, 0, 0);
     fgcolor = SDL_MapRGB(screen->format, 0, 0, 255);
 
-    if (0) {
-        if (option.back == TRUE) {
-            SDL_Color col;
-
-            if (LookUpColor(param.backname, rgbcolortable, &col) != -1)
-                bgcolor = SDL_MapRGB(screen->format, col.r, col.g, col.b);
-            else {
-                fprintf(stderr, "Warning: Unknown color %s\n",
-                        param.backname);
-                fprintf(stderr, "\tUsing the default one.\n");
-            }
-        }
-
-        if (option.fore == TRUE) {
-            SDL_Color col;
-
-            LookUpColor(param.forename, rgbcolortable, &col);
-            fgcolor = SDL_MapRGB(screen->format, col.r, col.g, col.b);
-        }
-
-        if (option.led == TRUE) {
-            SDL_Color col;
-
-            LookUpColor(param.ledname, rgbcolortable, &col);
-            ledcolor = SDL_MapRGB(screen->format, col.r, col.g, col.b);
-        }
-    }
-
     if (option.back == TRUE) {
         SDL_Color col;
 
@@ -425,15 +461,8 @@ main(int argc, char *argv[], char **env)
             fprintf(stderr, "\tUsing the default one.\n");  //HERE
         }
     }
-
-    background = bgcolor;       //SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
-
-
-    //SDL_WM_SetIcon(SDL_LoadBMP("bola-32.bmp"), NULL);
+    background = bgcolor;
     strncpy(nocomment, title, MAX_WORD_LEN);
-    //  printf("icon: %p\n",icon);
-
-    //  printf("icon: %p\n",icon);
     SDL_WM_SetIcon(CreateBall3D(screen, fgcolor, 15), NULL);
     SDL_WM_SetCaption(title, "punto");
 
@@ -780,17 +809,9 @@ main(int argc, char *argv[], char **env)
                         inmouse = 1;
                         kEOF = FALSE;
                     }
-                    //printf("NB:%d\n",NextBlock((float)(md_x-filerect.x)/filerect.l,dfile.name));
                 }
 
             }
-            /*        if(kp.mclick==TRUE && kp.mbup==TRUE){ */
-            /*    printf("mousedown:"); */
-            /*    printf("\t%d %d %d\n",md_x,md_y,in); */
-            /*    printf("mouseup:"); */
-            /*    printf("\t%d %d %d\n",mu_x,mu_y,in); */
-            /*        } */
-
             /* the mouse clic event its finished */
             if (kp.mbup == TRUE)
                 kp.mclick = FALSE;
@@ -836,16 +857,9 @@ main(int argc, char *argv[], char **env)
                     NextBlock((float) (md_x - filerect.x) / filerect.l,
                               dfile.name);
             md_x = 0;
-            //      printf("NEXTBLOCK 3: %d  %d\n",nextblock,actualizar);
             punto =
                 ReadBlock(&nextblock, dfile, pos, &numactivados, punto,
                           &statusblock);
-
-            /* counter */
-            //fprintf(stdout,"\033[G%-6d  %ld ",nextblock,numactivados);
-            //      fprintf(stdout,"\r%-6d  %-6ld  ",nextblock,numactivados);  
-            //      fprintf(stdout,"nextblock:%d\n",nextblock);
-            //      fflush(stdout);
         }
 
         MovePuntos(universe, param, punto);
@@ -853,14 +867,18 @@ main(int argc, char *argv[], char **env)
         DrawAll(screen, window, universe, param, background, dfile);
 
 
-    /******* saving xpm *******************/
-
         if (kp.F == TRUE || option.save == TRUE) {
-            //      printf("%s\n",param.rootfilename);
             WriteBitmap(screen, param.rootfilename);
             kp.F = FALSE;
         }
-    /******* --saving xpm *******************/
+
+        if (option.exit == TRUE) {
+            done = TRUE;
+            if (SDL_SaveBMP(screen, param.path) == -1) {
+                fprintf(stderr, "Error saving bitmap\n");
+                exit(2);
+            }
+        }
 
         if (actualizar == TRUE) {
             PurgeSprites(bola, 0);
@@ -882,7 +900,6 @@ main(int argc, char *argv[], char **env)
 
         Cont++;
         cont++;
-
     }                           /* while(done) */
     for (i = 0; i < numsprites; i++) {
         if (bola[i].on == TRUE) {
@@ -2016,7 +2033,7 @@ Arguments(int argc, char *argv[], struct Options *opt,
     char pal[MAX_WORD_LEN] = "";
 
     char *validargum[] =
-        { "h", "s", "size", "n", "g", "geom", "geometry", "d", "r",
+        { "h", "s", "size", "n", "g", "geom", "geometry", "d", "e", "r",
         "radio",
         "c", "color", "w", "G", "p", "B", "D", "t", "z", "V",
         "bg", "fg", "F", "lc", "verbose", "T", "trace", "P"
@@ -2194,8 +2211,6 @@ Arguments(int argc, char *argv[], struct Options *opt,
                         opt->pausa = FALSE;
                         fprintf(stderr,
                                 "Warning: -d option must have an argument. Setting default.\n");
-                    } else {
-                        printf("pausa: %d\n", (int) par->pausa);
                     }
                 }
                 break;
@@ -2297,6 +2312,16 @@ Arguments(int argc, char *argv[], struct Options *opt,
                         i++;
                     }
                     opt->field = TRUE;
+                }
+                break;
+            case 'e':
+                if (strncmp("e", arg, MAX_WORD_LEN) == 0) {
+                    if (argv[i + 1] == NULL) {
+                        fprintf(stderr, "-e needs and argument");
+                        exit(1);
+                    }
+                    opt->exit = TRUE;
+                    strncpy(par->path, argv[i + 1], MAX_WORD_LEN);
                 }
                 break;
             case 'v':
@@ -2793,6 +2818,7 @@ SetInitialValues(struct Options *opt, struct Keys *k)
     opt->anim = FALSE;
     opt->reverse = FALSE;
     opt->save = FALSE;
+    opt->exit = FALSE;
     opt->title = FALSE;
     opt->trace = FALSE;
     opt->ntrace = FALSE;

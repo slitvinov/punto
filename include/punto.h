@@ -85,8 +85,8 @@
 #define DEFAULTTYPE SPHERE
 #define DEFAULTCOLOR 0
 
-
-
+struct Options;
+struct Parametres;
 
 struct Point {
     float x, y, z;
@@ -135,46 +135,6 @@ struct DataFile {
     int eof;                    /* its reached the end of file? */
 };
 
-struct Options {
-    short color;
-    short radio;
-    short geometria;
-    short number;
-    short box;
-    short comment;
-    short realsize;
-    short dimension;
-    short size;
-    short fast;
-    short cut;
-    short type;
-    short column;
-    short real_color;
-    short gradient;
-    short field;
-    short fieldcom;
-    short varfield;
-    short palette;
-    short verbose;
-    short back;
-    short fore;
-    short led;
-    short file;
-    short signal;
-    short sizebox;
-    short pausa;
-    short rotate;
-    short mode;
-    short anim;
-    short reverse;
-    short save;
-    short title;
-    short trace;
-    short ntrace;
-    short tracelines;
-    short periodic;
-};
-
 struct RGBColor {
     Uint8 r, g, b;
     char name[MAX_WORD_LEN];
@@ -194,28 +154,6 @@ struct Block {
     char *comment;              /* pointer to the comment of the block */
     struct Block *next;         /* address of the next block */
     struct Block *prev;         /* address of the previous block */
-};
-
-struct Parametres {
-    char colstr[MAX_WORD_LEN];
-    char boxstr[MAX_WORD_LEN];
-    char backname[MAX_WORD_LEN];
-    char forename[MAX_WORD_LEN];
-    char ledname[MAX_WORD_LEN];
-    char rootfilename[MAX_WORD_LEN];
-    char titlewindow[MAX_WORD_LEN];
-
-    int size;
-    int pausa;
-    long N, N1, N2;
-    int ntrace;
-    int dimension;
-    int width, height;
-    float max_r, min_r;
-    float max_c, min_c;
-    float max_f, min_f;
-    float zoomz;
-    struct Vector box;
 };
 
 struct Values {

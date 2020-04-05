@@ -116,9 +116,9 @@ EventLoop(SDL_Event event, struct Window *w, struct Keys *k)
         break;
     case SDL_VIDEORESIZE:
         w0 = event.resize.w;
-	h0 = event.resize.h;
-        w->shift.x += ((double)w0  - w->w) / 2.;
-        w->shift.y += ((double)h0 - w->h) / 2.;
+        h0 = event.resize.h;
+        w->shift.x += ((double) w0 - w->w) / 2.;
+        w->shift.y += ((double) h0 - w->h) / 2.;
         w->w = w0;
         w->h = h0;
 

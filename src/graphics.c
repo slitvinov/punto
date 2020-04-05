@@ -513,7 +513,7 @@ WriteBitmap(SDL_Surface * bitmap, char *fpname)
     strcat(name, ".bmp");
 
     if (SDL_SaveBMP(bitmap, name) == -1) {
-      fprintf(stderr, "Error saving bitmap\n");
+        fprintf(stderr, "Error saving bitmap\n");
     }
 
     if (save_cont < MAXNFILES)
