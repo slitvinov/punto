@@ -23,5 +23,5 @@ all: punto gen
 punto: $O
 gen: $O
 data: gen
-	mkdir dat && ./gen
+	mkdir data && ./gen
 clean:; -rm -f $O punto gen dat/* && rmdir dat

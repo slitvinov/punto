@@ -5,7 +5,8 @@
 #define N 10000
 #define PI 3.14159265
 
-const char *me = "bin/gen";
+static const char *me = "bin/gen";
+static const char *DATADIR = "data/";
 
 int
 main()
@@ -28,7 +29,6 @@ main()
     int campo3D = 1;
     int stars = 1;
     int all = 1;
-    char DATADIR[8] = "dat/";
     char name[20];
 
     if (aleatorio) {
