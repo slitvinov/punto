@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "buffer.h"
+#include "include/buffer.h"
 
 long
 RChar(char *cad, FILE * fp)

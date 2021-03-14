@@ -1,6 +1,6 @@
 #include <math.h>
-#include "punto.h"
-#include "maths.h"
+#include "include/punto.h"
+#include "include/maths.h"
 
 
 void

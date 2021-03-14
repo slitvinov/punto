@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <SDL.h>
-#include "punto.h"
-#include "event.h"
+#include "include/punto.h"
+#include "include/event.h"
 
 int
 ParseEvent(SDL_Event * event)

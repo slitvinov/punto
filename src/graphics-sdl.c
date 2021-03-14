@@ -1,6 +1,6 @@
 #include <math.h>
-#include "graphics-sdl.h"
-#include "fonts-1.xpm"
+#include "include/graphics-sdl.h"
+#include "include/fonts-1.xpm"
 
 #define COS45 .70710678118654752440
 #define MAX_WORD_LEN 128

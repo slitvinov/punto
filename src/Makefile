@@ -6,7 +6,6 @@ CC = c99
 CFLAGS = -O2 -g
 SDL_CFLAGS = `sdl-config --cflags`
 SDL_LDFLAGS = `sdl-config --libs`
-M_LDFLAGS = -lm
 M_CFLAGS = -Iinclude
 
 O = \
@@ -17,12 +16,12 @@ graphics.o\
 graphics-sdl.o\
 help.o\
 maths.o\
-punto.o\
 
-all: dirs clean punto gen
-.c.o:; $(CC) $(CFLAGS) $(SDL_CFLAGS) $(M_CFLAGS) -c $< -o  $@
-.c:; $(CC) $O $(LDFLAGS) $(SDL_LDFLAGS) $(M_LDFLAGS) -o punto
+all: punto gen
+.c.o:; $(CC) -c $(CFLAGS) $(SDL_CFLAGS) $(M_CFLAGS) $< -o $@ 
+.c:; $(CC) $(LDFLAGS) $(SDL_CFLAGS) $< $O -o $@ $(SDL_LDFLAGS) -lm
 punto: $O
 gen: $O
-
-clean:; -rm -f $O punto gen
+data: gen
+	mkdir dat && ./gen
+clean:; -rm -f $O punto gen dat/* && rmdir dat

@@ -1,4 +1,4 @@
-#include "graphics.h"
+#include "include/graphics.h"
 
 int
 LookUpColor(char *name, struct RGBColor *table, SDL_Color * color)
