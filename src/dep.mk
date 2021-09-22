@@ -1,0 +1,23 @@
+# generate by script/dep
+buffer.o: include/buffer.h
+event.o: include/event.h
+event.o: include/punto.h
+file.o: include/buffer.h
+file.o: include/file.h
+file.o: include/punto.h
+file.o: include/system.h
+graphics.o: include/graphics.h
+graphics-sdl.o: include/fonts-1.xpm
+graphics-sdl.o: include/graphics-sdl.h
+help.o: include/help.h
+maths.o: include/maths.h
+maths.o: include/punto.h
+punto: include/buffer.h
+punto: include/event.h
+punto: include/file.h
+punto: include/graphics.h
+punto: include/graphics-sdl.h
+punto: include/help.h
+punto: include/maths.h
+punto: include/punto.h
+punto: include/rgb.h
