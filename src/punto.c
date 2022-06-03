@@ -163,15 +163,6 @@ int main(int argc, char *argv[]) {
   universe.escale.x = universe.escale.y = universe.escale.z = 0;
   universe.zoom = universe.zoom_size = 1;
 
-  //  kkk=0;
-  // for(i=0;i<=64;i++){
-  //  kkk+=i*i*3+60;
-  //}
-  //  printf("MAXMEM:%f\n",64*kkk);
-  // printf("surfacesize:%d\n",sizeof(SDL_Surface));
-  // printf("pixelformat:%d\n",sizeof(  SDL_PixelFormat));
-  //  printf("PUNTOsize:%d\n",sizeof(struct Punto));
-
   SetInitialValues(&option, &kp);
 
   switch (Arguments(argc, argv, &option, &param)) {
