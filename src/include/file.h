@@ -1,10 +1,3 @@
-#ifndef _FILE_H
-#define _FILE_H
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 void GetFileName(int, char **, char *);
 int NumRet(FILE *);
 long CountLines(char *);
@@ -22,5 +15,3 @@ int TakeWordFromCad(char *word, char *cad);
 struct Block *CreateBlock();
 int ReadNBlocks(char *fname, struct Block *br, long fpos);
 int ReadRcFile(SDL_Surface *screen, char **, Uint32 *, char *);
-
-#endif
