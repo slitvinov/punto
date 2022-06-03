@@ -103,7 +103,7 @@ void Usage(char *ver, char *l_rev) {
 
   (void)fprintf(stdout, "\nCopyleft mrevenga 1998-2009 ");
   //          "\nCopyleft XaY 1998 ");
-  (void)fprintf(stdout, ver);
+  (void)fprintf(stdout, "%s", ver);
   (void)fprintf(stdout, "\nlast revision %s\n", l_rev);
   (void)fprintf(stdout, "Please, send bugs and suggestions to: mrevenga at "
                         "users.sourceforge.net\n");

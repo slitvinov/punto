@@ -129,7 +129,7 @@ char nocomment[MAX_WORD_LEN] = "No Comment";
 struct Block *broot;
 struct Rectangle filerect;
 
-int main(int argc, char *argv[], char **env) {
+int main(int argc, char *argv[]) {
   Uint32 background;
   long i;
   int done;
@@ -466,7 +466,6 @@ int main(int argc, char *argv[], char **env) {
           SDL_MapRGB(screen->format, rgbcolortable[41 + i * 8].r,
                      rgbcolortable[41 + i * 8].g, rgbcolortable[41 + i * 8].b);
     }
-    // HERE not implemented yet    ReadRcFile(screen,env,colortable,dname);
   }
 
   universe.escale.x = (float)window.w / (val_data.max_x - val_data.min_x);

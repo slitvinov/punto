@@ -1,5 +1,4 @@
 #include <math.h>
-#include <stdio.h>
 #include <SDL.h>
 #include "include/punto.h"
 #include "include/maths.h"

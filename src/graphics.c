@@ -261,7 +261,6 @@ void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 bordercolor,
   char num[MAX_WORD_LEN] = "";
   float value;
   float inc;
-  int sign = 0;
 
   w = 10;
   h = 2 * MAX_NSCOLORS;
@@ -291,7 +290,6 @@ void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 bordercolor,
     x1 = x0 + 3;
     y1 = y0;
     DrawLine(screen, x0, y0, x1, y1, bordercolor);
-    sign = 0;
     value = (10. - i) * inc + val.min_c;
     if (fabs(value) < inc / 1000)
       value = 0;

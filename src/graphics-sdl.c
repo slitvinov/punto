@@ -347,11 +347,9 @@ void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color) {
    */
 
   int x, y;
-  float inct;
   float r2;
 
   //  if(r<=0)return;
-  inct = (1. / (float)r);
   r2 = (float)r * r;
 
   //  DrawCircle(surface,x0,y0,r,color);

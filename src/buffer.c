@@ -48,7 +48,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
   int inword;
   size_t iword, lword; /* position of the first letter and word length */
   int eow;
-  int eof;
   size_t nbytes, ntbytes;
   size_t nbytesc;
   char c;
@@ -122,7 +121,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
     inword = 0;
     iword = lword = 0;
     eow = 0;
-    eof = 0;
     do {
       c = buffer.buf[buffer.i + lword + iword]; /* read a char */
 
@@ -154,7 +152,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
         n = _FillBuffer(&buffer);
         if (n == 0 && buffer.eof) { /* EOF */
           eow = 1;
-          eof = 1;
         }
       }
     } while (eow == 0);
@@ -185,7 +182,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
 
     lword = 0;
     eow = 0;
-    eof = 0;
     do {
       c = buffer.buf[buffer.i + lword]; /* read a char */
 
@@ -221,7 +217,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
         n = _FillBuffer(&buffer);
         if (n == 0 && buffer.eof) { /* EOF */
           eow = 1;
-          eof = 1;
         }
       }
     } while (eow == 0);

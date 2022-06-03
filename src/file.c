@@ -1,12 +1,12 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <SDL.h>
-
 #include "include/punto.h"
 #include "include/file.h"
 #include "include/buffer.h"
@@ -316,7 +316,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
   //  struct Buffer buf;
   char line[MAX_LINE_LEN];
   int type;
-  int i;
   int sw;
 
   //  int eoffile;
@@ -328,7 +327,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
   long cont;
   long fcont = 0;
   int inblock = 0;
-  int incomment = 0;
   int indata = 0;
   int infile = 0;
   int numblock = 0;
@@ -351,7 +349,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
   lastb = br;
 
   cont = 0;
-  incomment = 0;
   indata = 0;
   nrbytes = 0;
 
@@ -378,8 +375,9 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
       indata = 1;
       cont++;
     }
-    if (type == COMMENT)
-      incomment = 1;
+    if (type == COMMENT) {
+      
+    }
 
     if (inblock == 0) {
       if (type == COMMENT || type == DATA) {
@@ -397,7 +395,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
           lastb->pos = file_pos;
           lastb->num = 0;
           lastb->len = 0;
-          incomment = 0;
         }
       }
     }
@@ -411,7 +408,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
         /* fin de bloque */
         inblock = 0;
         indata = 0;
-        incomment = 0;
         lastb->num = cont;
         cont = 0;
       }
