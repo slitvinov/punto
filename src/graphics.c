@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdio.h>
+#include <math.h>
 #include <SDL.h>
 #include "include/graphics-sdl.h"
 #include "include/file.h"

@@ -1,17 +1,3 @@
-#ifndef _PUNTO_H
-#define _PUNTO_H
-
-#include <math.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include "SDL.h"
-
 #define TRUE 1
 #define FALSE 0
 
@@ -258,7 +244,3 @@ int CountSprites(struct Sprite *b, int nmax);
 void InfoSprites(struct Sprite *b, struct Options opt);
 
 int NextBlock(float x, char *fname);
-
-/*** --funciones **/
-
-#endif
