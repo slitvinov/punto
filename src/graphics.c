@@ -1,3 +1,9 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <SDL.h>
+#include "include/graphics-sdl.h"
+#include "include/file.h"
+#include "include/punto.h"
 #include "include/graphics.h"
 
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
