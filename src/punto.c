@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
   if (option.file == FALSE) {
     strncat(param.rootfilename, "temp_", 6);
   } else {
-    strncat(param.rootfilename, "_", 1);
+    strncat(param.rootfilename, "_", 2);
   }
 
   /* Read file properties: n. of columns , n. data rows of the first block  */
