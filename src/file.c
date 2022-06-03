@@ -2,7 +2,6 @@
 #include <string.h>
 #include "include/punto.h"
 #include "include/file.h"
-#include "include/system.h"
 #include "include/buffer.h"
 
 void GetFileName(int argc, char *argv[], char *fname) {

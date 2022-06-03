@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <SDL.h>
+#include "include/punto.h"
 #include "include/maths.h"
 #include "include/graphics.h"
 #include "include/graphics-sdl.h"
-#include "include/punto.h"
 #include "include/file.h"
 #include "include/event.h"
 #include "include/rgb.h"

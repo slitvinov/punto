@@ -1,5 +1,3 @@
-#include "SDL.h"
-
 void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel);
 Uint32 GetPixel(SDL_Surface *surface, int x, int y);
 void DrawLine_old(SDL_Surface *surface, int x0, int y0, int x1, int y1,

@@ -5,8 +5,10 @@ event.o: include/punto.h
 file.o: include/buffer.h
 file.o: include/file.h
 file.o: include/punto.h
-file.o: include/system.h
+graphics.o: include/file.h
 graphics.o: include/graphics.h
+graphics.o: include/graphics-sdl.h
+graphics.o: include/punto.h
 graphics-sdl.o: include/fonts-1.xpm
 graphics-sdl.o: include/graphics-sdl.h
 help.o: include/help.h
