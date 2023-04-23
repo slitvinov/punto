@@ -1,7 +1,5 @@
 # generate by script/dep
 buffer.o: buffer.h
-event.o: event.h
-event.o: punto.h
 file.o: buffer.h
 file.o: file.h
 file.o: punto.h
@@ -14,7 +12,6 @@ graphics-sdl.o: graphics-sdl.h
 maths.o: maths.h
 maths.o: punto.h
 punto: buffer.h
-punto: event.h
 punto: file.h
 punto: graphics.h
 punto: graphics-sdl.h

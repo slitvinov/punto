@@ -9,7 +9,6 @@ SDL_LDFLAGS = `sdl-config --libs`
 
 O = \
 buffer.o\
-event.o\
 file.o\
 graphics.o\
 graphics-sdl.o\
