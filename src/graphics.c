@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <SDL.h>
-#include "include/graphics-sdl.h"
-#include "include/file.h"
-#include "include/punto.h"
-#include "include/graphics.h"
+#include "graphics-sdl.h"
+#include "file.h"
+#include "punto.h"
+#include "graphics.h"
 
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
   /* look for a color name name into the table table returning

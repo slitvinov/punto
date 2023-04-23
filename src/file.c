@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 #include <SDL.h>
-#include "include/punto.h"
-#include "include/file.h"
-#include "include/buffer.h"
+#include "punto.h"
+#include "file.h"
+#include "buffer.h"
 
 void GetFileName(int argc, char *argv[], char *fname) {
   /* Gets the name of the file data.

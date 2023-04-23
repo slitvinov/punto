@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <math.h>
 #include <SDL.h>
-#include "include/punto.h"
-#include "include/maths.h"
-#include "include/graphics.h"
-#include "include/graphics-sdl.h"
-#include "include/file.h"
-#include "include/event.h"
-#include "include/rgb.h"
-#include "include/help.h"
-#include "include/buffer.h"
+#include "punto.h"
+#include "maths.h"
+#include "graphics.h"
+#include "graphics-sdl.h"
+#include "file.h"
+#include "event.h"
+#include "rgb.h"
+#include "help.h"
+#include "buffer.h"
 
 struct Options {
   short color;

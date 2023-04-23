@@ -1,7 +1,7 @@
 #include <math.h>
 #include <SDL.h>
-#include "include/punto.h"
-#include "include/maths.h"
+#include "punto.h"
+#include "maths.h"
 
 void TCR(float a, float b, float c, long n1, long n2, struct Point r,
          float comp, short field, int *reset_box, struct Punto *p) {
