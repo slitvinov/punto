@@ -376,7 +376,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
       cont++;
     }
     if (type == COMMENT) {
-      
     }
 
     if (inblock == 0) {

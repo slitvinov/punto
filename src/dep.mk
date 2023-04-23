@@ -11,7 +11,6 @@ graphics.o: graphics-sdl.h
 graphics.o: punto.h
 graphics-sdl.o: fonts-1.xpm
 graphics-sdl.o: graphics-sdl.h
-help.o: help.h
 maths.o: maths.h
 maths.o: punto.h
 punto: buffer.h
@@ -19,7 +18,6 @@ punto: event.h
 punto: file.h
 punto: graphics.h
 punto: graphics-sdl.h
-punto: help.h
 punto: maths.h
 punto: punto.h
 punto: rgb.h

@@ -13,7 +13,6 @@ event.o\
 file.o\
 graphics.o\
 graphics-sdl.o\
-help.o\
 maths.o\
 
 all: punto gen
