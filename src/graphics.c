@@ -149,7 +149,7 @@ void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
     strncpy(color[i].name, name, MAX_WORD_LEN);
     if (status == 0) {
       i--;
-      fscanf(fp, "%s", name);
+      status = fscanf(fp, "%s", name);
       strcat(color[i].name, " ");
       len = strlen(name);
       if (len > MAX_WORD_LEN - 1)
