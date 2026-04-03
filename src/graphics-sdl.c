@@ -384,7 +384,7 @@ SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
 
   background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
-  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
 
   FillCircle(temp, radio, radio, radio, color);
   DrawCircle(temp, radio, radio, radio, bcolor);
@@ -418,7 +418,7 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
   }
   background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
-  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
 
   SDL_GetRGB(color, screen->format, &red, &green, &blue);
   r = red;
@@ -446,9 +446,8 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
     }
   }
 
-  sprite = SDL_DisplayFormat(temp);
+  sprite = SDL_ConvertSurface(temp, screen->format, 0);
   if (sprite == NULL) {
-    /* SDL_DisplayFormat can fail with sdl12-compat; use temp directly */
     return (temp);
   }
   SDL_FreeSurface(temp);
@@ -493,7 +492,7 @@ SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
 
   background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
-  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
 
   FillRectangle(temp, 0, 0, radio, radio, color);
   DrawRectangle(temp, 0, 0, radio - 1, radio - 1, bcolor);

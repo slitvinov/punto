@@ -180,6 +180,7 @@ struct Keys {
 };
 
 struct Window {
+  SDL_Window *sdl_window;
   SDL_Surface *screen;
   int w, h; /* width, height */
   int bpp;

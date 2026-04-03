@@ -137,10 +137,9 @@ int ParseEvent(SDL_Event *event) {
   case SDL_USEREVENT:
   case SDL_KEYDOWN:
   case SDL_KEYUP:
-    /*    case SDL_PRESSED:  */
   case SDL_MOUSEBUTTONUP:
   case SDL_MOUSEBUTTONDOWN:
-  case SDL_VIDEORESIZE:
+  case SDL_WINDOWEVENT:
   case SDL_QUIT:
     status = TRUE;
     break;
@@ -224,17 +223,19 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
 
     k->user = TRUE;
     break;
-  case SDL_VIDEORESIZE:
-    w0 = event.resize.w;
-    h0 = event.resize.h;
-    w->shift.x += ((double)w0 - w->w) / 2.;
-    w->shift.y += ((double)h0 - w->h) / 2.;
-    w->w = w0;
-    w->h = h0;
+  case SDL_WINDOWEVENT:
+    if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+      w0 = event.window.data1;
+      h0 = event.window.data2;
+      w->shift.x += ((double)w0 - w->w) / 2.;
+      w->shift.y += ((double)h0 - w->h) / 2.;
+      w->w = w0;
+      w->h = h0;
 
-    w->screen = SDL_SetVideoMode(w->w, w->h, (int)w->bpp, w->flags);
-    status = TRUE;
-
+      w->screen = SDL_GetWindowSurface(w->sdl_window);
+      screen = w->screen;
+      status = TRUE;
+    }
     break;
   case SDL_KEYDOWN:
     //    PrintKey(&event.key.keysym, 1);
@@ -253,7 +254,7 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
       k->q = TRUE;
       break;
     case SDLK_0:
-    case SDLK_KP0:
+    case SDLK_KP_0:
       k->k_0 = TRUE;
       break;
     case SDLK_LESS:
@@ -346,33 +347,33 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
     case SDLK_PAGEDOWN:
       k->pagedown = TRUE;
       break;
-    case SDLK_KP7:
+    case SDLK_KP_7:
     case SDLK_7:
       k->pressed = TRUE;
       k->k_7 = TRUE;
       break;
     case SDLK_8:
-    case SDLK_KP8:
+    case SDLK_KP_8:
       k->pressed = TRUE;
       k->k_8 = TRUE;
       break;
     case SDLK_9:
-    case SDLK_KP9:
+    case SDLK_KP_9:
       k->pressed = TRUE;
       k->k_9 = TRUE;
       break;
     case SDLK_4:
-    case SDLK_KP4:
+    case SDLK_KP_4:
       k->pressed = TRUE;
       k->k_4 = TRUE;
       break;
     case SDLK_5:
-    case SDLK_KP5:
+    case SDLK_KP_5:
       k->pressed = TRUE;
       k->k_5 = TRUE;
       break;
     case SDLK_6:
-    case SDLK_KP6:
+    case SDLK_KP_6:
       k->pressed = TRUE;
       k->k_6 = TRUE;
       break;
@@ -423,27 +424,27 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
       k->down = FALSE;
       break;
     case SDLK_4:
-    case SDLK_KP4:
+    case SDLK_KP_4:
       k->k_4 = FALSE;
       break;
     case SDLK_5:
-    case SDLK_KP5:
+    case SDLK_KP_5:
       k->k_5 = FALSE;
       break;
     case SDLK_6:
-    case SDLK_KP6:
+    case SDLK_KP_6:
       k->k_6 = FALSE;
       break;
     case SDLK_7:
-    case SDLK_KP7:
+    case SDLK_KP_7:
       k->k_7 = FALSE;
       break;
     case SDLK_8:
-    case SDLK_KP8:
+    case SDLK_KP_8:
       k->k_8 = FALSE;
       break;
     case SDLK_9:
-    case SDLK_KP9:
+    case SDLK_KP_9:
       k->k_9 = FALSE;
       break;
     case SDLK_b:
@@ -829,20 +830,14 @@ int main(int argc, char *argv[]) {
 
   /* Initialize SDL */
 
-  if (SDL_Init((Uint32)(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE |
-                        SDL_INIT_TIMER)) < 0) {
+  if (SDL_Init((Uint32)(SDL_INIT_VIDEO | SDL_INIT_TIMER)) < 0) {
     fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
     exit(EXIT_FAILURE);
   }
   atexit(SDL_Quit);
 
-  if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
-    fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
-    exit(EXIT_FAILURE);
-  }
-
   /* Set video mode */
-  window.flags = (Uint32)(SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE);
+  window.flags = SDL_WINDOW_RESIZABLE;
   window.w = WIDTH;
   window.h = HEIGHT;
   if (option.geometria == TRUE) {
@@ -851,10 +846,18 @@ int main(int argc, char *argv[]) {
   }
   window.bpp = 0;
 
-  screen = SDL_SetVideoMode(window.w, window.h, window.bpp, window.flags);
-  if (!screen) {
-    fprintf(stderr, "Couldn't set %dx%d video mode: %s\n", window.w, window.h,
+  window.sdl_window =
+      SDL_CreateWindow("punto", SDL_WINDOWPOS_UNDEFINED,
+                       SDL_WINDOWPOS_UNDEFINED, window.w, window.h,
+                       window.flags);
+  if (!window.sdl_window) {
+    fprintf(stderr, "Couldn't create %dx%d window: %s\n", window.w, window.h,
             SDL_GetError());
+    exit(EXIT_FAILURE);
+  }
+  screen = SDL_GetWindowSurface(window.sdl_window);
+  if (!screen) {
+    fprintf(stderr, "Couldn't get window surface: %s\n", SDL_GetError());
     exit(EXIT_FAILURE);
   }
   window.screen = screen;
@@ -898,24 +901,17 @@ int main(int argc, char *argv[]) {
   }
   background = bgcolor;
   strncpy(nocomment, title, MAX_WORD_LEN);
-  SDL_WM_SetIcon(CreateBall3D(screen, fgcolor, 15), NULL);
-  SDL_WM_SetCaption(title, "punto");
+  {
+    SDL_Surface *icon = CreateBall3D(screen, fgcolor, 15);
+    if (icon)
+      SDL_SetWindowIcon(window.sdl_window, icon);
+  }
+  SDL_SetWindowTitle(window.sdl_window, title);
 
   /* Print out information about our surfaces */
   if (option.verbose > 1) {
     printf("Screen is at %d bits per pixel\n",
            (int)screen->format->BitsPerPixel);
-    if ((screen->flags & SDL_HWSURFACE) == SDL_HWSURFACE) {
-      printf("Screen is in video memory\n");
-    } else {
-      printf("Screen is in system memory\n");
-    }
-    if ((screen->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF) {
-      printf("Screen has double-buffering enabled\n");
-    }
-    if ((screen->flags & SDL_HWACCEL) == SDL_HWACCEL) {
-      printf("Sprite blit uses hardware acceleration\n");
-    }
   }
   /* --Initialize SDL */
 
@@ -974,11 +970,7 @@ int main(int argc, char *argv[]) {
   then = SDL_GetTicks();
   done = 0;
 
-  /* Enable UNICODE translation for keyboard input */
-  SDL_EnableUNICODE(1);
-
-  /* Enable auto repeat for keyboard input */
-  SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+  /* SDL2: key repeat is handled by the OS, unicode via SDL_TextInputEvent */
 
   for (i = 0; i < ntrace; i++) {
     if ((traceball[i] =
@@ -1492,13 +1484,7 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
       printf("sprites active: %d\n", CountSprites(bola, numsprites));
 
     /* Update the screen! */
-    if ((screen->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF) {
-      SDL_Flip(screen);
-    } else if (option.fast == FALSE || actualizar == TRUE)
-      SDL_UpdateRect(screen, 0, 0, 0, 0);
-    else {
-      SDL_UpdateRect(screen, 0, 0, LEDW, LEDH);
-    }
+    SDL_UpdateWindowSurface(win.sdl_window);
     /*      SDL_Flip(screen2); */
     /*      SDL_UpdateRect(screen2, 0,0,LEDW,LEDH); */
   }

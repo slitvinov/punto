@@ -4,8 +4,8 @@
 .SUFFIXES: .c
 CC = c99
 CFLAGS = -O2 -g
-SDL_CFLAGS = `sdl-config --cflags`
-SDL_LDFLAGS = `sdl-config --libs`
+SDL_CFLAGS = `sdl2-config --cflags`
+SDL_LDFLAGS = `sdl2-config --libs`
 
 O = \
 buffer.o\

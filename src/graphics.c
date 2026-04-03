@@ -316,8 +316,8 @@ void GenColorTable(SDL_Surface *screen, Uint32 *colortable, int type) {
    */
   SDL_Color color1, color2;
 
-  color1.unused = 0;
-  color2.unused = 0;
+  color1.a = 0;
+  color2.a = 0;
 
   switch (type) {
   case RED:
