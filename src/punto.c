@@ -1,15 +1,223 @@
+#include <fcntl.h>
+#include <math.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <SDL.h>
-#include "punto.h"
-#include "maths.h"
-#include "graphics.h"
-#include "graphics-sdl.h"
-#include "file.h"
-#include "rgb.h"
-#include "buffer.h"
+
+#define TRUE 1
+#define FALSE 0
+
+#define INFO FALSE
+
+#define CIRCLE 0
+#define SQUARE 1
+#define SPHERE 2
+
+#define PI 3.14159265358979323846
+#define INC_ANG (PI / 200.0)
+
+#define ZOOM 0
+#define NAV 1
+
+#define FORE 1
+#define BACK 2
+
+#define BLOCK_BUF_SIZE 8192
+#define MAX_LINE_LEN 4096
+#define MAX_WORD_LEN 128
+#define HEIGHT_OFFSET 20
+
+#define BIGINT 1000000 /* max. number of puntos per frame */
+
+#define ARROWCOLOR 2
+#define LEDCOLOR 2
+
+#define LEDW 50 /* width & height of the led zone */
+#define LEDH 50
+
+#define MAXNFILES 9999 /* max number of files to save */
+
+#define WIDTH 640
+#define HEIGHT 480 /* dimensions of the window */
+
+#define MAX_NSIZE 64           /* num. of diferent sizes  */
+#define MAX_NCOLORS 752        /*  464 number of names for colors  */
+#define MAX_NSCOLORS 64        /* number of colors 3D */
+#define MAX_NGRADIENTS 64      /* number of gradients of color, for 3D */
+#define MAX_NCOLOR_GRADIENT 64 /* numero de gradientes para paleta */
+#define NPIXSIMBOLS 92
+
+#define TRACE_DEFAULT 50
+#define TRACE_MAX 500 /* max number of trace points */
+
+/* palettes */
+#define SPECTRUM 0
+#define RED 1
+#define GREEN 2
+#define BLUE 3
+#define GREY 4
+#define GRAY 4
+
+#define FONTSIZE 3
+
+#define RETURN 1
+#define COMMENT 2
+#define DATA 3
+
+#define CONFFILE ".puntorc"
+
+#define DEFAULTZOOM 0.9
+#define DEFAULTPALETTE SPECTRUM
+#define DEFAULTRADIO 12
+#define DEFAULTTYPE SPHERE
+#define DEFAULTCOLOR 0
+
+#define BUFFER_SIZE 8192
+#define CHAR 1
+#define WORD 2
+#define LINE 3
+
+#define COS45 .70710678118654752440
+
+struct Point {
+  float x, y, z;
+};
+
+struct Rectangle {
+  int x, y; /* upper left corner */
+  int l, h; /* lenght and hight */
+};
+
+struct Vector {
+  double x0, y0, z0; /* origin */
+  double x1, y1, z1; /* final  */
+};
+
+struct Punto {
+  float x, y, z;
+  float x1, y1, z1;
+  float radio;
+  float color;
+  float vx, vy, vz;
+  float vx1, vy1, vz1;
+  int active;
+  SDL_Surface *sprite;
+};
+
+struct Sprite {
+  SDL_Surface *surface;
+  Uint32 time;
+  int cont;
+  int on;
+};
+
+struct PosCol {
+  int x, y, z;
+  int r, c;
+  int vx, vy, vz;
+};
+
+struct DataFile {
+  FILE *fp;                /* file descriptor. */
+  char name[MAX_WORD_LEN]; /* name of the file */
+  int nblocks;             /* numbre of blocks */
+  int ncol;                /* number of columns; */
+  long size;               /* size of the  file */
+  int eof;                 /* its reached the end of file? */
+};
+
+struct RGBColor {
+  Uint8 r, g, b;
+  char name[MAX_WORD_LEN];
+};
+
+struct Block {
+  int read; /* its already readed? */
+  long pos; /* address to the data file position of the block */
+  long len;
+  long num;           /* number of elements */
+  char *comment;      /* pointer to the comment of the block */
+  struct Block *next; /* address of the next block */
+  struct Block *prev; /* address of the previous block */
+};
+
+struct Values {
+  float delay;
+  int dimension;
+  float max_r, min_r;
+  float max_c, min_c;
+  float max_f, min_f;
+  float max_x, min_x, max_y, min_y, max_z, min_z;
+  /*  float max_fx,min_fx,max_fy,min_fy,max_fz,min_fz; */
+};
+
+struct Keys {
+  short z;                     /* zoom */
+  short i;                     /* increase decrease size. */
+  short q;                     /* quit */
+  short b;                     /* border */
+  short c;                     /* comments on off */
+  short f;                     /* fast */
+  short s;                     /* start stop */
+  short S;                     /* save mode on off */
+  short r;                     /* reverse animation */
+  short F;                     /* save image */
+  short n;                     /* navigation mode */
+  short u;                     /* normalized to unit on off. */
+  short t;                     /* trace on off */
+  short p;                     /* periodic boundaries on off */
+  short plus;                  /* increase delay */
+  short minus;                 /* decrease delay */
+  short period;                /* set delay to initial value. */
+  short arrow;                 /* arrow type */
+  short up, down, left, right; /* move */
+  short pageup, pagedown;
+  short shift;                             /* fast move */
+  short less;                              /* slow move */
+  short space;                             /* one by one step animation */
+  short k_4, k_5, k_6, k_7, k_8, k_9, k_0; /* rotate */
+  short pressed;
+  short mclick;
+  short mbdown; /* mouse buttom down */
+  short mbup;   /* mouse buttom up */
+  short user;   /* user signal */
+};
+
+struct Window {
+  SDL_Window *sdl_window;
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
+  SDL_Surface *screen;
+  int w, h; /* width, height */
+  Uint32 flags;
+  struct Point shift;
+};
+
+struct Universe {
+  struct Point ang;        /* polar coordenates, angles */
+  float zoom;              /* zoom */
+  float zoom_size;         /* zoom */
+  struct Point dshift;     /* default shift of data */
+  struct Point cm, cw, cv; /* centro geometrico datos, centro de la ventana,
+                              centro visualizacion */
+  struct Point escale;
+  int psize; /* default size for puntos */
+};
+
+struct _Buffer {
+  size_t i, f;           /* next to read and next to write */
+  FILE *fp;              /* last fiel in use */
+  long fpos;             /* position in the file */
+  int eof;               /* if true EOF reached */
+  char buf[BUFFER_SIZE]; /* buffer max. size */
+};
 
 struct Options {
   short color;
@@ -75,6 +283,121 @@ struct Parametres {
   struct Vector box;
 };
 
+#include "fonts-1.xpm"
+#include "rgb.h"
+
+/* forward declarations: buffer */
+size_t _FillBuffer(struct _Buffer *buffer);
+long _RBuffer(char *cad, int, int type, FILE *fp);
+long RChar(char *cad, FILE *fp);
+long RWord(char *cad, int, FILE *fpq);
+long RLine(char *cad, int, FILE *fp);
+
+/* forward declarations: file */
+void GetFileName(int, char **, char *);
+int NumRet(FILE *);
+long CountLines(char *);
+int NColumns(char *);
+int FindChain(char *target, char *cad[], int n);
+int ReadLine(FILE *fp, char *cad);
+int AnalizeLine(char *cad);
+long SizeFile(char *);
+int Trim(char *cad);
+size_t ReadWordFromCad(char *word, char *cad);
+int TakeWordFromCad(char *word, char *cad);
+struct Block *CreateBlock(void);
+int ReadNBlocks(char *fname, struct Block *br, long fpos);
+
+/* forward declarations: maths */
+double aleatorio(double a);
+void Dec2Hex(long int n, char *a);
+void Rapida(long *a, int izq, int drch, struct Punto *p);
+void TCR(float a, float b, float c, long, long, struct Point r, float comp,
+         short field, int *reset_box, struct Punto *p);
+
+/* forward declarations: graphics-sdl */
+void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel);
+Uint32 GetPixel(SDL_Surface *surface, int x, int y);
+void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+              Uint32 color);
+void PutPixelCircle(SDL_Surface *screen, int x, int y, int x0, int y0,
+                    double razon, Uint32 color);
+void DrawCircle(SDL_Surface *screen, int x0, int y0, int r, Uint32 color);
+void FillRing(SDL_Surface *surface, int x0, int y0, int r, int h,
+              Uint32 color);
+void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color);
+SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
+                        int radio);
+SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio);
+void DrawRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+                   Uint32 color);
+void FillRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+                   Uint32 color);
+SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
+                             int radio);
+int DrawText(SDL_Surface *screen, char *text, int x, int y, Uint32 color);
+int DrawChar(SDL_Surface *screen, char **text, int x, int y, Uint32 color);
+int Sqrt(int x);
+
+/* forward declarations: graphics */
+void ReadRGBColors(char *fname, struct RGBColor *color, int n);
+int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color);
+int Led1(SDL_Surface *screen, Uint32 color, int x, int y, int n);
+void DrawArrow(SDL_Surface *screen, SDL_Rect pos, struct Point f, float factor,
+               Uint32 color, int type);
+void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 border, struct Values,
+               int x, int y);
+void DrawFile(SDL_Surface *screen, Uint32 color, Uint32 border,
+              struct Rectangle rec, struct DataFile);
+void GenColorTable(SDL_Surface *screen, Uint32 *colortable, int type);
+void GenMiniColorTable(SDL_Surface *screen, Uint32 *ct, int n, SDL_Color color1,
+                       SDL_Color color2);
+void WriteBitmap(SDL_Surface *bitmap, char *);
+void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
+             float z, Uint32 color);
+void InfoColors(struct RGBColor *rgbcolortable);
+
+/* forward declarations: punto */
+int ParseEvent(SDL_Event *event);
+int CheckEvent(SDL_Event *event);
+int NextEvent(SDL_Event *event);
+int EventLoop(SDL_Event event, struct Window *w, struct Keys *k);
+void Usage(char *ver, char *l_rev);
+void DrawInfo(SDL_Surface *screen, struct Window win, struct Universe,
+              struct DataFile df);
+void MovePuntos(struct Universe, struct Parametres par, struct Punto *);
+void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
+             struct Parametres par, Uint32 background, struct DataFile df);
+void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe,
+                struct Punto *, long *, struct Point, float,
+                struct Parametres val, struct Values data);
+void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
+                     struct Parametres par, float z, int order);
+int DrawPeriodicPuntos(SDL_Surface *screen, struct Window w, struct Universe,
+                       struct Punto *, long *, struct Point, float,
+                       struct Parametres val, struct Values data);
+void RangeOfValues(struct Punto *p, struct Options, struct Values *data);
+int CountSprites(struct Sprite *b, int nmax);
+void InfoSprites(struct Sprite *b, struct Options opt);
+void PurgeSprites(struct Sprite *, int);
+struct Punto *ReadBlock(int *n, struct DataFile, struct PosCol pos, long *,
+                        struct Punto *p, int *);
+int NextBlock(float x, char *fname);
+int Arguments(int argc, char *argv[], struct Options *option,
+              struct Parametres *val);
+void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
+               struct Values *val);
+int SetDimension(struct Parametres par, struct Options opt, int ncol,
+                 int noptcol);
+int GetColumns(char *str, int ncolf, int *p_col);
+void OrderOfColumns(struct Options opt, int d, int ncol, int noptc, int *posc,
+                    struct PosCol *p);
+int GetBox(int d, struct Parametres *param);
+void BoxProperties(struct Values val_d, struct Parametres param,
+                   struct Options opt, struct Punto *b);
+void SetInitialValues(struct Options *opt, struct Keys *k);
+
+/* global variables */
 char version[] = {"1.0.04"};
 char last_revision[] = {"Jun 2009"};
 
@@ -125,6 +448,2369 @@ char nocomment[MAX_WORD_LEN] = "No Comment";
 
 struct Block *broot;
 struct Rectangle filerect;
+
+/*****************************************************************************
+ * Buffer functions (from buffer.c)
+ *****************************************************************************/
+
+long RChar(char *cad, FILE *fp) {
+  /*
+     Read a char from file fp
+   */
+  long rbytes;
+
+  rbytes = _RBuffer(cad, 1, CHAR, fp);
+  return (rbytes);
+}
+
+long RWord(char *cad, int len, FILE *fp) {
+  /*
+     Read a char from file fp
+   */
+  long rbytes;
+
+  rbytes = _RBuffer(cad, len, WORD, fp);
+  return (rbytes);
+}
+
+long RLine(char *cad, int len, FILE *fp) {
+  /*
+     Read a line from file fp
+   */
+  long rbytes;
+
+  rbytes = _RBuffer(cad, len, LINE, fp);
+  return (rbytes);
+}
+
+long _RBuffer(char *cad, int len, int type, FILE *fp) {
+  /*
+     Keep a buffer for a file
+     copy in cad the next char, word or line from the buffer.
+     returns:
+     the number of readed bytes from the file.
+     if EOF is reached returns EOF.
+   */
+  static int init = 0;
+  static struct _Buffer buffer;
+
+  size_t n;
+  int inword;
+  size_t iword, lword; /* position of the first letter and word length */
+  int eow;
+  size_t nbytes, ntbytes;
+  size_t nbytesc;
+  char c;
+
+  strcpy(cad, "\0"); /* delete the chain */
+
+  if (len + 1 > BUFFER_SIZE) {
+    printf("ERROR: word size too long.\n");
+    printf("\t word size: %d max. size: %d\n", len, BUFFER_SIZE);
+    exit(EXIT_FAILURE);
+  }
+
+  if (init == 0) { /* initialize the buffer  */
+
+    buffer.i = 0;
+    buffer.f = 0;
+    buffer.eof = 0;
+    buffer.fp = fp;
+    buffer.fpos = ftell(fp);
+    n = _FillBuffer(&buffer);
+
+    if (n == 0 && buffer.eof) { /* EOF */
+      return (EOF);
+    }
+    init++;
+  }
+
+  /* check if the buffer is valid */
+  if (buffer.fp != fp || ftell(fp) != buffer.fpos) { /* buffer not valid */
+    buffer.i = 0;
+    buffer.f = 0;
+    buffer.fp = fp;
+    buffer.fpos = ftell(fp);
+    n = _FillBuffer(&buffer);
+    if (n == 0 && buffer.eof) { /* EOF */
+      return (EOF);
+    }
+  }
+
+  /* al least one element */
+  if (buffer.f == buffer.i) {
+
+    n = _FillBuffer(&buffer);
+    if (n == 0 && buffer.eof) { /* EOF */ /* may be an error, HERE */
+      return (EOF);
+    }
+    if (n == 0 && !buffer.eof) {
+      fprintf(stderr, "ERROR 1 in ReadBuffer()\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  nbytes = 0;
+  ntbytes = 0;
+  nbytesc = 0;
+
+  switch (type) {
+  case CHAR:
+    if (buffer.f - buffer.i > 0) {
+      memcpy(cad, &buffer.buf[buffer.i], 1);
+      buffer.i++;
+      nbytes++;
+      ntbytes++;
+    } else {
+      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
+      exit(EXIT_FAILURE);
+    }
+    break;
+
+  case WORD:
+    inword = 0;
+    iword = lword = 0;
+    eow = 0;
+    do {
+      c = buffer.buf[buffer.i + lword + iword]; /* read a char */
+
+      switch (c) {
+      case ' ':
+      case '\t':
+        if (inword == 0) {
+          iword++;
+        }
+        if (inword == 1) {
+          eow = 1;
+        }
+
+        break;
+      case '\n':
+        eow = 1;
+        break;
+      default:
+        inword = 1;
+        lword++;
+
+        break;
+      }
+      nbytes++;
+      ntbytes++;
+
+      /* if buffer is empty refill */
+      if (buffer.i + nbytes == buffer.f) {
+        n = _FillBuffer(&buffer);
+        if (n == 0 && buffer.eof) { /* EOF */
+          eow = 1;
+        }
+      }
+    } while (eow == 0);
+
+    if (lword > 0) { // buffer overrun
+      if (lword < (size_t)len) {
+        memcpy(cad, &buffer.buf[buffer.i + iword], lword);
+      } else {
+        fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n", len);
+        memcpy(cad, &buffer.buf[buffer.i + iword], (size_t)len - 1);
+        lword = (size_t)len - 1;
+      }
+    }
+    buffer.i += nbytes;
+
+    /* end of string */
+    if (lword < (size_t)len - 1) {
+      strcpy(&cad[lword], "\0");
+    } else {
+      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
+      fprintf(stderr, "Line too long. ReadBuffer()\n");
+      exit(EXIT_FAILURE);
+    }
+    break;
+
+  case LINE:
+    //    printf("reading a line\n");
+
+    lword = 0;
+    eow = 0;
+    do {
+      c = buffer.buf[buffer.i + lword]; /* read a char */
+
+      switch (c) {
+      case '\n':
+        eow = 1;
+        break;
+      default:
+        lword++;
+        break;
+      }
+      nbytes++;
+      ntbytes++;
+      /* if buffer is empty refill */
+      if (buffer.i + nbytes == buffer.f) {
+        if (lword > 0) {
+          // buffer overrun
+          if (nbytesc + lword < (size_t)len) {
+            memcpy(&cad[nbytesc], &buffer.buf[buffer.i], lword);
+          } else {
+            fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n",
+                    len);
+            memcpy(&cad[nbytesc], &buffer.buf[buffer.i], len - nbytesc - 1);
+            lword = len - nbytesc - 1;
+          }
+
+          buffer.i += nbytes;
+          nbytesc += lword;
+          buffer.i = buffer.f = 0;
+          lword = 0;
+          nbytes = 0;
+        }
+        n = _FillBuffer(&buffer);
+        if (n == 0 && buffer.eof) { /* EOF */
+          eow = 1;
+        }
+      }
+    } while (eow == 0);
+
+    if (lword > 0) {
+      // buffer overrun
+      if (nbytesc + lword < (size_t)len) {
+        memcpy(&cad[nbytesc], &buffer.buf[buffer.i], lword);
+      } else {
+        fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n", len);
+        memcpy(&cad[nbytesc], &buffer.buf[buffer.i], len - nbytesc - 1);
+        lword = len - nbytesc - 1;
+      }
+      nbytesc += lword;
+    }
+    buffer.i += nbytes;
+
+    /* end of string */
+    if (lword < (size_t)len - 1) {
+      strcpy(&cad[nbytesc], "\0");
+    } else {
+      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
+      fprintf(stderr, "Line too long. ReadBuffer()\n");
+      exit(EXIT_FAILURE);
+    }
+    break; // LINE
+  default:
+    break;
+  }
+
+  /* return values */
+  if (nbytes == 0) {
+    if (buffer.eof && buffer.i == buffer.f && nbytesc == 0)
+      return (EOF);
+  }
+  return (ntbytes);
+}
+
+size_t _FillBuffer(struct _Buffer *buffer) {
+  /*
+     fill the buffer with file data
+   */
+  size_t nbytes; /* bytes to read */
+  size_t n;
+
+  if (feof(buffer->fp) != 0) {
+    buffer->eof = 1;
+    return (0);
+  }
+  if (buffer->i != 0) { /* moving data */
+    memmove(&buffer->buf[0], &buffer->buf[buffer->i], buffer->f - buffer->i);
+    buffer->f = buffer->f - buffer->i;
+    buffer->i = 0;
+  }
+
+  nbytes = BUFFER_SIZE - buffer->f;
+
+  n = fread(&buffer->buf[buffer->f], 1, nbytes, buffer->fp);
+
+  if (feof(buffer->fp) != 0)
+    buffer->eof = 1;
+
+  if (n > 0) {
+    buffer->f += n;
+    buffer->fpos = ftell(buffer->fp);
+  }
+  return (n);
+}
+
+/*****************************************************************************
+ * File functions (from file.c)
+ *****************************************************************************/
+
+void GetFileName(int argc, char *argv[], char *fname) {
+  /* Gets the name of the file data.
+   *  Must be the last argument at the line comand arguments
+   */
+
+  if (strlen(argv[argc - 1]) >= MAX_WORD_LEN) {
+    fprintf(stderr, "File name too long. Max. length: %d characters\n",
+            MAX_WORD_LEN);
+    exit(EXIT_FAILURE);
+  }
+
+  strncpy(fname, argv[argc - 1], MAX_WORD_LEN);
+  strncpy(&fname[MAX_WORD_LEN - 1], "\0", 1);
+
+} /* --funtion GetFileName  */
+
+int NumRet(FILE *fp) {
+  /* end of block ?
+     returns the number of ret's between two data lines.
+     ignore all the lines that begins with # and % or a letter.
+     point the file to the next valid data.
+     returns:
+     if the file reachs EOF returns -1 else
+     the number of \n
+   */
+
+  int ret = 0;
+  char s;
+  long file_pos;
+  int eof = FALSE;
+  size_t br;
+
+  file_pos = ftell(fp);
+
+  for (;;) {
+    br = fread(&s, sizeof(char), 1, fp);
+    if (br < 1) {
+      if (feof(fp) != 0) {
+        eof = TRUE;
+        break;
+      } else {
+        fprintf(stderr, "ERROR in fread()\n");
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      //    if(fscanf(fp,"%c",&s) == EOF){eof=TRUE; break;}//return(-1);
+      if (s == '\n') {
+        ret++;
+        file_pos = ftell(fp);
+      } else if ((s != ' ') && (s != '\t') && (s != '#') && (s != '%') &&
+                 (s < 'a' || s > 'z') && (s < 'A' || s > 'Z')) {
+        file_pos = ftell(fp) - 1;
+        break;
+      }
+      /* if a comment line exits goto the next one */
+      if (s == '#' || s == '%' || (s > 'a' && s < 'z') ||
+          (s > 'A' && s < 'Z')) {
+        for (;;) {
+          if (fread(&s, sizeof(char), 1, fp) == 0) {
+            if (feof(fp) != 0) {
+              eof = TRUE;
+              break;
+            } else {
+              perror("fread");
+              exit(EXIT_FAILURE);
+            }
+          }
+          //    if(fscanf(fp,"%c",&s) == EOF){eof=TRUE;break;}
+          if (s == '\n') {
+            ret++;
+            file_pos = ftell(fp); /* new position of the file */
+            break;
+          }
+        }
+      }
+    }
+  } /* for */
+
+  fseek(fp, file_pos, SEEK_SET);
+  if (eof)
+    return (-1);
+  return (ret);
+} /* --function NumRet */
+
+long CountLines(char *fname) {
+  /*
+     v 0.2
+     returns the number of data lines of the first data block.
+     doesnt count comment or empty lines.
+     return the number of puntos (particles).
+   */
+  FILE *fp;
+  char s;
+  int nlines, nchar, comment;
+  int endblock;
+
+  if ((fp = fopen(fname, "r")) == NULL) {
+    perror(fname);
+    exit(EXIT_FAILURE);
+  }
+  /* go to the first data line */
+  (void)NumRet(fp);
+  // retorno=NumRet(fp;
+
+  nlines = 0;
+  endblock = 0;
+  nchar = 0;
+  comment = 0;
+  do {
+    if (fscanf(fp, "%c", &s) != EOF) {
+      switch (s) {
+      case '\n': /* end of line */
+        if (nchar == 0)
+          endblock++; /* end of block? */
+        else {
+          nlines++;
+        }
+        comment = 0;
+        nchar = 0;
+        break;
+      case '#': /* comment line */
+        comment++;
+        nchar = 0;
+        break;
+      case ' ':
+      case '\t':
+        break;
+      default:
+        if (comment == 0)
+          nchar++;
+        break;
+      }
+    } else {
+      endblock++;
+    }
+
+  } while (endblock == 0);
+
+  fclose(fp);
+
+  return (nlines);
+}
+
+int NColumns(char *fname)
+/* function NColums
+   returns:
+   the number of rows of the data file.
+ */
+{
+  FILE *fp;
+  struct stat info;
+  int fd;
+  char s;
+  int c, dentropal;
+  int np;
+  int cont = 0;
+  int sw = 0;
+
+  /* exit if the file doesn't exist */
+
+  if ((fd = open(fname, O_RDONLY)) == -1) {
+    perror(fname);
+    exit(EXIT_FAILURE);
+  }
+  /* wait until the file size is nonzero    */
+  do {
+    info.st_size = 0;
+    if (fstat(fd, &info) == -1) {
+      perror(fname);
+      exit(EXIT_FAILURE);
+    }
+    if ((int)info.st_size != 0)
+      sw++;
+    if (cont == 0 && sw == 0) {
+      printf("file: %s has zero size. Waiting ...\n", fname);
+      cont++;
+    }
+    usleep(100000);
+  } while (sw == 0);
+  sw = 0;
+  close(fd);
+
+  np = 0;
+  dentropal = FALSE;
+  //  printf("data file : (%s)\n",fname);
+  if ((fp = fopen(fname, "r")) == NULL) {
+    perror(fname);
+    exit(EXIT_FAILURE);
+  }
+
+  /* goto the first data line */
+  NumRet(fp);
+  do {
+    c = fscanf(fp, "%c", &s);
+    if (c == EOF)
+      sw++;
+    if (s == '\n')
+      sw++;
+    if (s == ' ' || s == '\t')
+      dentropal = FALSE;
+    else if (dentropal == FALSE) {
+      dentropal = TRUE;
+      ++np;
+    }
+  } while (sw == 0);
+  fclose(fp);
+  return (np);
+}
+
+int FindChain(char *target, char *cad[], int n) {
+  /* find the word target in the string array cad
+     return:
+     the position of tarjet in cad
+     -1 if is not found.
+   */
+  int i;
+
+  for (i = 0; i < n; i++) {
+    if (strncmp(target, cad[i], MAX_WORD_LEN) == 0) {
+      return (i);
+    }
+  }
+  return (-1);
+}
+
+int AnalizeLine(char *cad) {
+  /* return the type of the line:
+     0 empty, return
+     -1, end-of-file
+     1 comment line
+     2 dataline
+   */
+  int i;
+  size_t len;
+  int status;
+
+  len = strlen(cad);
+  /* look for the first valid character */
+  status = 0;
+  for (i = 0; i < (int)len && i < MAX_LINE_LEN; i++) {
+    /* look for a letter */
+    if (strncmp(&cad[i], "a", 1) >= 0 && strncmp(&cad[i], "z", 1) <= 0)
+      return (COMMENT);
+    if (strncmp(&cad[i], "A", 1) >= 0 && strncmp(&cad[i], "Z", 1) <= 0)
+      return (COMMENT);
+    /* --look for a letter */
+    if (status == 0) {
+      switch (cad[i]) {
+      case ' ':
+      case '\t':
+        break;
+      case '\n':
+        status = RETURN;
+        break;
+      case '#':
+      case '%':
+        status = COMMENT;
+        break;
+      default:
+        status = DATA;
+        break;
+      }
+    }
+    if (status)
+      break;
+  }
+  return (status);
+}
+
+long SizeFile(char *filename) {
+  /*
+     the file changes ?
+     return the size of the file filename
+  */
+  int fd;
+  struct stat info;
+
+  if ((fd = open(filename, O_RDONLY)) == -1) {
+    perror(filename);
+    exit(EXIT_FAILURE);
+  }
+  info.st_size = 0;
+  if (fstat(fd, &info) == -1) {
+    perror(filename);
+    exit(EXIT_FAILURE);
+  }
+  close(fd);
+  return (info.st_size);
+}
+
+int ReadNBlocks(char *fname, struct Block *br, long fpos) {
+  /*
+     version 0.1
+     Read the file fname completely
+     looking for blocks of data
+     Create a linked list of struct Block starting in *br.
+     return:
+     the number of blocks of the file.
+   */
+
+  FILE *fp;
+
+  //  struct Buffer buf;
+  char line[MAX_LINE_LEN];
+  int type;
+  int sw;
+
+  //  int eoffile;
+  long file_pos;
+  long file_pos0;
+  long file_size;
+  long incfile_size;
+  struct Block *lastb;
+  long cont;
+  long fcont = 0;
+  int inblock = 0;
+  int indata = 0;
+  int infile = 0;
+  int numblock = 0;
+  long nrbytes = 0;
+
+  //  long ntbytes=0;
+
+  if ((fp = fopen(fname, "r")) == NULL) {
+    perror(fname);
+    exit(EXIT_FAILURE);
+  }
+
+  if (fseek(fp, fpos, SEEK_SET) == -1)
+    printf("ERROR Seeking file\n");
+
+  br->pos = ftell(fp);
+  file_size = SizeFile(fname);
+  incfile_size = (file_size - fpos) / 20;
+  file_pos = file_pos0 = fpos;
+  lastb = br;
+
+  cont = 0;
+  indata = 0;
+  nrbytes = 0;
+
+  do {
+    file_pos += nrbytes; // HERE ftell(fp);//-incpos;
+
+    strncpy(line, "", (size_t)1);
+    nrbytes = RLine(line, MAX_LINE_LEN, fp);
+    //    ntbytes+=nrbytes;
+    //    incpos=nrbytes;
+
+    type = AnalizeLine(line);
+
+    if ((file_pos - nrbytes - file_pos0 > incfile_size)) {
+      fflush(stdout);
+      file_pos0 = file_pos - nrbytes;
+      fcont++;
+    }
+    if (nrbytes < 0) { /* fin de archivo */
+      infile = -1;
+    }
+
+    if (type == DATA) {
+      indata = 1;
+      cont++;
+    }
+    if (type == COMMENT) {
+    }
+
+    if (inblock == 0) {
+      if (type == COMMENT || type == DATA) {
+        /* comienza un bloque */
+        inblock = 1;
+        if (infile == 0) { /* first block */
+          infile = 1;
+          lastb->pos = file_pos;
+        } else { /* siguientes bloques */
+          numblock++;
+          lastb->next = CreateBlock();
+          lastb->next->prev = lastb;
+          lastb = lastb->next;
+          lastb->next = 0;
+          lastb->pos = file_pos;
+          lastb->num = 0;
+          lastb->len = 0;
+        }
+      }
+    }
+    if (inblock) {
+      sw = 0;
+      if (nrbytes < 0)
+        sw = 1;
+      if (indata && type != DATA)
+        sw = 1;
+      if (sw) {
+        /* fin de bloque */
+        inblock = 0;
+        indata = 0;
+        lastb->num = cont;
+        cont = 0;
+      }
+    }
+  } while (infile > 0);
+  fclose(fp);
+  return (numblock);
+}
+
+struct Block *CreateBlock(void) {
+  /* Create a new Block
+
+   */
+  struct Block *bloque;
+
+  if ((bloque = (struct Block *)malloc(sizeof(struct Block))) == NULL) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  bloque->read = 0;
+  bloque->pos = 0;
+  bloque->len = 0;
+  bloque->num = 0;
+  bloque->comment = NULL;
+  bloque->next = NULL;
+  bloque->prev = NULL;
+
+  return (bloque);
+}
+
+int TakeWordFromCad(char *word, char *cad) {
+  /* copy the first word of cad copying it in word,
+     word is removed from cad
+     returns:
+     the lenght of the new cad or
+     -1 if the original cad had zero lenght
+   */
+
+  char tmp[MAX_LINE_LEN];
+  size_t wlen;
+
+  tmp[0] = '\0';
+  wlen = ReadWordFromCad(word, cad);
+  if (wlen == 0)
+    return (-1);
+  strncpy(tmp, &cad[wlen], MAX_LINE_LEN - 1);
+  tmp[MAX_LINE_LEN - 1] = '\0';
+  strncpy(cad, tmp, MAX_LINE_LEN - 1);
+  cad[MAX_LINE_LEN - 1] = '\0';
+  return ((int)strlen(cad));
+}
+
+size_t ReadWordFromCad(char *word, char *cad) {
+  /* Read the first word of the chain cad and put it in word
+     Don't change cad
+     return values:
+     if cad is an empty chain returns 0 else
+     return the lenght of word
+   */
+  size_t i = 0;
+  size_t len = 0;
+  int status = 0;
+
+  len = strlen(cad);
+
+  for (i = 0; i < len && i < MAX_LINE_LEN && status == 0; i++) {
+
+    switch (cad[i]) {
+    case ' ':
+    case '\t':
+    case '#':
+    case '%':
+    case '\n':
+      status = 1;
+      break;
+    default:
+      break;
+    }
+  }
+  if (i >= MAX_WORD_LEN)
+    i = MAX_WORD_LEN - 1;
+  strncpy(word, &cad[0], i);
+  word[i] = '\0';
+  return (i);
+}
+
+int Trim(char *cad) {
+  /* Remove the blank characteres an the beginning and
+     at the end of the chain cad
+   */
+
+  size_t i;
+  int cl, cr;
+  int swcl, swcr;
+  size_t len;
+  char word[MAX_LINE_LEN];
+
+  cl = cr = 0;
+  swcl = swcr = 0;
+  len = strlen(cad);
+
+  if (len) {
+    for (i = 0; i < len && i < MAX_LINE_LEN; i++) {
+      if (swcl == 0) {
+        if (cad[i] == ' ' || cad[i] == '\t')
+          cl++;
+        else
+          swcl = 1;
+      }
+      if (swcr == 0) {
+        if (cad[len - i - 1] == ' ' || cad[len - i - 1] == '\t')
+          cr++;
+        else
+          swcr = 1;
+      }
+      if (swcl == 1 && swcr == 1)
+        break;
+      if ((size_t)(cl + cr) >= len)
+        break;
+    }
+    if ((size_t)(cl + cr) < len)
+      strncpy(word, &cad[cl], (size_t)(len - cl - cr));
+  }
+  if (len > (size_t)(cl + cr))
+    word[len - cl - cr] = '\0';
+  else
+    word[0] = '\0';
+  strcpy(cad, word);
+  return (0);
+}
+
+int ReadLine(FILE *fp, char *cad) {
+  /* Read a line from the file fp and copy it in the string pointer by cad.
+     returns:
+     the number of elements readed.
+     if EOF is reached returns EOF
+   */
+  char c;
+  int i;
+  size_t status = 0;
+
+  //  fscanf(fp,"%s",&cad);
+
+  i = 0;
+  status = fread(&c, sizeof(char), 1, fp);
+  while (status > 0 && c != '\n' && i < MAX_LINE_LEN - 1) {
+    memcpy(&cad[i], &c, 1);
+    status = fread(&c, sizeof(char), 1, fp);
+    i++;
+  }
+  if (c == '\n') { //  endofline
+    cad[i] = '\0';
+    return (i);
+  } else {
+    if (status <= 0) { // endoffile
+      if (feof(fp) != 0)
+        return (EOF);
+      else {
+        printf("ERROR: error reading file.\n");
+        exit(EXIT_FAILURE);
+      }
+    } else { // endofbuffer
+      printf("ERROR: line too long. Exceeds max size: %d Bytes\n",
+             MAX_LINE_LEN);
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+/*****************************************************************************
+ * Math functions (from maths.c)
+ *****************************************************************************/
+
+void TCR(float a, float b, float c, long n1, long n2, struct Point r,
+         float comp, short field, int *reset_box, struct Punto *p) {
+  /*
+     rotate, traslate and scale all puntos in *p writing the result in *p1.
+     a,b,c are the angles of rotation,
+     n1,n2 the range number of puntos.
+     p the puntos to rotate
+     r the translation vector.
+     comp is the scale factor.
+     reset_box to initialize variables
+     field if we are rotating a vectorial field
+   */
+
+  long i, j, k;
+  static float A0[3][3];
+  float A1[3][3];
+  float temp[3];
+  float cosa, sina, cosb, sinb, cosc, sinc;
+
+  /* initialitation */
+
+  if (*reset_box == TRUE) {
+    *reset_box = FALSE;
+
+    A0[0][0] = 1;
+    A0[0][1] = 0;
+    A0[0][2] = 0;
+
+    A0[1][0] = 0;
+    A0[1][1] = 1;
+    A0[1][2] = 0;
+
+    A0[2][0] = 0;
+    A0[2][1] = 0;
+    A0[2][2] = 1;
+  }
+
+  cosa = cosb = cosc = 1.;
+  sina = sinb = sinc = 0.;
+
+  if (a != 0) {
+    cosa = (float)cos(a);
+    sina = (float)sin(a);
+  }
+  if (b != 0) {
+    cosb = (float)cos(b);
+    sinb = (float)sin(b);
+  }
+  if (c != 0) {
+    cosc = (float)cos(c);
+    sinc = (float)sin(c);
+  }
+
+  A1[0][0] = cosb * cosc;
+  A1[0][1] = cosb * sinc;
+  A1[0][2] = sinb;
+
+  A1[1][0] = -sina * sinb * cosc - cosa * sinc;
+  A1[1][1] = -sina * sinb * sinc + cosa * cosc;
+  A1[1][2] = sina * cosb;
+
+  A1[2][0] = -cosa * sinb * cosc + sina * sinc;
+  A1[2][1] = -cosa * sinb * sinc - sina * cosc;
+  A1[2][2] = cosa * cosb;
+
+  /* matrix mult  A0=A1*A0 */
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      temp[j] = 0.0;
+      for (k = 0; k < 3; k++)
+        temp[j] += A1[j][k] * A0[k][i];
+    }
+    for (k = 0; k < 3; k++)
+      A0[k][i] = temp[k];
+  }
+
+  /* reescaling A1=A0*comp */
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      A1[i][j] = A0[i][j] * comp;
+    }
+  }
+
+  /* rotation  + traslation */
+
+  for (i = n1; i < n2; i++) {
+    p[i].x1 = (A1[0][0] * (p[i].x - r.x) + A1[0][1] * (p[i].y - r.y) +
+               A1[0][2] * (p[i].z - r.z));
+    p[i].y1 = (A1[1][0] * (p[i].x - r.x) + A1[1][1] * (p[i].y - r.y) +
+               A1[1][2] * (p[i].z - r.z));
+    p[i].z1 = (A1[2][0] * (p[i].x - r.x) + A1[2][1] * (p[i].y - r.y) +
+               A1[2][2] * (p[i].z - r.z));
+  }
+
+  if (field == TRUE) {
+
+    /* rotation */
+    for (i = n1; i < n2; i++) {
+      p[i].vx1 = ((A1[0][0] * (p[i].vx) + A1[0][1] * (p[i].vy) +
+                   A1[0][2] * (p[i].vz))) /
+                 comp;
+      p[i].vy1 = ((A1[1][0] * (p[i].vx) + A1[1][1] * (p[i].vy) +
+                   A1[1][2] * (p[i].vz))) /
+                 comp;
+      p[i].vz1 = ((A1[2][0] * (p[i].vx) + A1[2][1] * (p[i].vy) +
+                   A1[2][2] * (p[i].vz))) /
+                 comp;
+    }
+  }
+} /* -- funcion TCR3 */
+
+void Rapida(long *a, int izq, int drch, struct Punto *p)
+/* function Rapida:
+   sort puntos from low to high in z axis value,
+   the ordered indexes are returned in the vector a
+ */
+{
+  long i, j, k;
+  double z;
+
+  if (drch <= izq)
+    return;
+  i = izq;
+  j = drch;
+
+  z = p[a[(izq + drch) / 2]].z1;
+  do {
+    while (p[a[i]].z1 < z && i < drch)
+      i++;
+    while (z < p[a[j]].z1 && j > izq)
+      j--;
+    if (i <= j) {
+      k = a[i];
+      a[i] = a[j];
+      a[j] = k;
+      i++;
+      j--;
+    }
+  } while (i <= j);
+  if (izq < j)
+    Rapida(a, izq, j, p);
+  if (i < drch)
+    Rapida(a, i, drch, p);
+} /* --funcion Rapida */
+
+void Dec2Hex(long n, char *a) {
+  /*
+     return in the char string a the HEX value of the integer number n.
+   */
+  char *num[16] = {"0", "1", "2", "3", "4", "5", "6", "7",
+                   "8", "9", "a", "b", "c", "d", "e", "f"};
+
+  long i, j;
+
+  while (n > 255)
+    n /= 256;
+
+  strcpy(a, "");
+
+  i = n / 16;
+  j = n % 16;
+  strncat(a, num[i], 1);
+  strncat(a, num[j], 1);
+}
+
+double aleatorio(double a) {
+  /*
+     return a random value between 0 and a.
+   */
+
+  double b;
+
+  b = ((double)rand() / RAND_MAX * a);
+  return b;
+}
+
+/*****************************************************************************
+ * SDL Graphics primitives (from graphics-sdl.c)
+ *****************************************************************************/
+
+void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+/*
+ * Set the pixel at (x, y) to the given value
+ * NOTE: The surface must be locked before calling this!
+ */
+{
+  Uint8 bpp = surface->format->BytesPerPixel;
+
+  /* Here p is the address to the pixel we want to set */
+  Uint8 *p;
+
+  if (x < 0)
+    return;
+  if (y < 0)
+    return;
+  if (x >= surface->w)
+    return;
+  if (y >= surface->h)
+    return;
+
+  /*    if (SDL_MUSTLOCK(surface)) { */
+  /*      if (SDL_LockSurface(surface) < 0) { */
+  /*        printf("Error locking surface: %s\n", SDL_GetError()); */
+  /*        abort(); */
+  /*      } */
+  /*    } */
+
+  p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+  switch (bpp) {
+  case 1:
+    *p = pixel;
+    break;
+
+  case 2:
+    *(Uint16 *)p = pixel;
+    break;
+
+  case 3:
+    if (SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+      p[0] = (pixel >> 16) & 0xff;
+      p[1] = (pixel >> 8) & 0xff;
+      p[2] = pixel & 0xff;
+    } else {
+      p[0] = pixel & 0xff;
+      p[1] = (pixel >> 8) & 0xff;
+      p[2] = (pixel >> 16) & 0xff;
+    }
+    break;
+
+  case 4:
+    *(Uint32 *)p = pixel;
+    break;
+  }
+  /* Unlock the surface. */
+  //  SDL_UnlockSurface(surface);
+}
+
+Uint32 GetPixel(SDL_Surface *surface, int x, int y)
+/*
+ * Return the pixel value at (x, y)
+ * NOTE: The surface must be locked before calling this!
+ */
+{
+  Uint8 bpp = surface->format->BytesPerPixel;
+
+  /* Here p is the address to the pixel we want to retrieve */
+  Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+  switch (bpp) {
+  case 1:
+    return *p;
+
+  case 2:
+    return *(Uint16 *)p;
+
+  case 3:
+    if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
+      return p[0] << 16 | p[1] << 8 | p[2];
+    else
+      return p[0] | p[1] << 8 | p[2] << 16;
+
+  case 4:
+    return *(Uint32 *)p;
+
+  default:
+    return 0; /* shouldn't happen, but avoids warnings */
+  }
+}
+
+void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+              Uint32 color) {
+  /*
+     Draw a line that starts at x0,y0 and ends at x1,y1
+     of color color
+   */
+
+  int t, distancia;
+  int xerr = 0, yerr = 0, d_x, d_y;
+  int incx, incy;
+
+  /*    if (SDL_MUSTLOCK(surface)) {  */
+  /*      if (SDL_LockSurface(surface) < 0) {  */
+  /*        printf("Error locking surface: %s\n", SDL_GetError());  */
+  /*        abort();  */
+  /*      }  */
+  /*    }  */
+
+  d_x = x1 - x0;
+  d_y = y1 - y0;
+
+  if (d_x > 0)
+    incx = 1;
+  else if (d_x == 0)
+    incx = 0;
+  else
+    incx = -1;
+
+  if (d_y > 0)
+    incy = 1;
+  else if (d_y == 0)
+    incy = 0;
+  else
+    incy = -1;
+
+  d_x = abs(d_x);
+  d_y = abs(d_y);
+  if (d_x > d_y)
+    distancia = d_x;
+  else
+    distancia = d_y;
+
+  for (t = 0; t <= distancia + 1; t++) {
+    PutPixel(surface, x0, y0, color);
+    xerr += d_x;
+    yerr += d_y;
+    if (xerr > distancia) {
+      xerr -= distancia;
+      x0 += incx;
+    }
+    if (yerr > distancia) {
+      yerr -= distancia;
+      y0 += incy;
+    }
+  }
+  /* Unlock the surface. */
+  /*    SDL_UnlockSurface(surface); */
+}
+
+
+void PutPixelCircle(SDL_Surface *screen, int x, int y, int x0, int y0,
+                    double razon, Uint32 color) {
+  /*
+
+   */
+  int startx, endx, x1, starty, endy, y1;
+
+  starty = (int)(y * razon);
+  endy = (int)((y + 1) * razon);
+  startx = (int)(x * razon);
+  endx = (int)((x + 1) * razon);
+
+  for (x1 = startx; x1 < endx; ++x1) {
+    PutPixel(screen, x1 + x0, y + y0, color);
+    PutPixel(screen, x1 + x0, y0 - y, color);
+    PutPixel(screen, x0 - x1, y0 - y, color);
+    PutPixel(screen, x0 - x1, y + y0, color);
+  }
+
+  for (y1 = starty; y1 < endy; ++y1) {
+    PutPixel(screen, y1 + x0, x + y0, color);
+    PutPixel(screen, y1 + x0, y0 - x, color);
+    PutPixel(screen, x0 - y1, y0 - x, color);
+    PutPixel(screen, x0 - y1, x + y0, color);
+  }
+}
+
+void DrawCircle(SDL_Surface *screen, int x0, int y0, int r, Uint32 color) {
+  /*
+     Draw a circle
+   */
+  int x, y, delta;
+  float razon;
+
+  razon = 1.;
+  y = r;
+  delta = 3 - 2 * r;
+
+  for (x = 0; x < y;) {
+    PutPixelCircle(screen, x, y, x0, y0, razon, color);
+
+    if (delta < 0)
+      delta += 4 * x + 6;
+    else {
+      delta += 4 * (x - y) + 10;
+      y--;
+    }
+    x++;
+  }
+  x = y;
+  if (y)
+    PutPixelCircle(screen, x, y, x0, y0, razon, color);
+}
+
+void FillRing(SDL_Surface *surface, int x0, int y0, int r, int h,
+              Uint32 color) {
+  /*
+     Draw a ring of center x0,y0 and radius r,h
+     with color color
+   */
+  int x, y;
+  int r2;
+  int y1;
+
+  if (r <= 0)
+    return;
+
+  r2 = r * r;
+  y1 = (int)(r * COS45 + .5);
+
+  for (y = 0; y <= y1; y++) {
+
+    x = Sqrt(r2 - y * y);
+
+    DrawLine(surface, x0 - x, y0 + y, x0 - x + h, y0 + y, color);
+    DrawLine(surface, x0 + x - h, y0 + y, x0 + x, y0 + y, color);
+
+    DrawLine(surface, x0 - x, y0 - y, x0 - x + h, y0 - y, color);
+    DrawLine(surface, x0 + x - h, y0 - y, x0 + x, y0 - y, color);
+
+    DrawLine(surface, y0 + y, x0 + x, y0 + y, x0 + x - h, color);
+    DrawLine(surface, y0 + y, x0 - x + h, y0 + y, x0 - x, color);
+
+    DrawLine(surface, y0 - y, x0 + x, y0 - y, x0 + x - h, color);
+    DrawLine(surface, y0 - y, x0 - x + h, y0 - y, x0 - x, color);
+  }
+}
+
+void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color) {
+  /*
+     Fill a circlering of center x0,y0 and radio r
+     with color color
+   */
+
+  int x, y;
+  float r2;
+
+  //  if(r<=0)return;
+  r2 = (float)r * r;
+
+  //  DrawCircle(surface,x0,y0,r,color);
+  if (r == 0) {
+    PutPixel(surface, x0, y0, color);
+  } else {
+    for (y = 0; y <= r; y++) {
+      x = (int)(sqrt(r2 - y * y) + .5);
+      DrawLine(surface, x0 - x, y0 + y, x0 + x, y0 + y, color);
+      DrawLine(surface, x0 - x, y0 - y, x0 + x, y0 - y, color);
+    }
+  }
+}
+
+SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
+                        int radio) {
+  /*
+     Create  a circle bitmap
+     of radio radio
+     of color color and
+     border color bcolor
+   */
+  SDL_Surface *temp;
+  Uint32 background;
+
+  temp = SDL_CreateRGBSurface(SDL_SWSURFACE, 2 * radio + 1, 2 * radio + 1,
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
+
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
+  SDL_FillRect(temp, NULL, background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
+
+  FillCircle(temp, radio, radio, radio, color);
+  DrawCircle(temp, radio, radio, radio, bcolor);
+
+  return temp;
+}
+
+SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
+  /*
+     Create a 3D sphere bitmap
+     of radio radio
+     of color color
+   */
+
+  SDL_Surface *temp;
+  SDL_Surface *sprite;
+  Uint32 background;
+  float i;
+  Uint8 red, green, blue;
+  float ir, ig, ib;
+  Uint8 r, g, b;
+  float inci;
+
+  temp = SDL_CreateRGBSurface(SDL_SWSURFACE, 2 * radio + 1, 2 * radio + 1,
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
+  if (temp == NULL) {
+    fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError());
+    exit(EXIT_FAILURE);
+  }
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
+  SDL_FillRect(temp, NULL, background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
+
+  SDL_GetRGB(color, screen->format, &red, &green, &blue);
+  r = red;
+  g = green;
+  b = blue;
+  ir = ((float)red / radio) * .4;
+  ig = ((float)green / radio) * .4;
+  ib = ((float)blue / radio) * .4;
+
+  if (radio < 2) {
+    color = SDL_MapRGB(temp->format, r, g, b);
+    FillCircle(temp, radio, radio, radio, color);
+  } else {
+    inci = 1;
+    inci = (float)radio / 20.;
+    if (inci < 1)
+      inci = 1;
+    for (i = (float)radio; i > 0; i -= inci) {
+      r = red - ir * i;
+      g = green - ig * i;
+      b = blue - ib * i;
+      color = SDL_MapRGB(temp->format, r, g, b);
+      FillRing(temp, radio, radio, (int)(i), (int)(inci * 1.4142 + .5) + 1,
+               color);
+    }
+  }
+
+  sprite = SDL_ConvertSurface(temp, screen->format, 0);
+  if (sprite == NULL) {
+    return (temp);
+  }
+  SDL_FreeSurface(temp);
+  return (sprite);
+}
+
+void DrawRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+                   Uint32 color) {
+  /*
+     Draw a rectangle
+   */
+  DrawLine(surface, x0, y0, x1, y0, color);
+  DrawLine(surface, x0, y0, x0, y1, color);
+  DrawLine(surface, x0, y1, x1, y1, color);
+  DrawLine(surface, x1, y1, x1, y0, color);
+}
+
+void FillRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
+                   Uint32 color) {
+  /*
+     fill a rectangle with color color
+   */
+  int y;
+
+  for (y = y0; y <= y1; y++) {
+    DrawLine(surface, x0, y, x1, y, color);
+  }
+}
+
+SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
+                             int radio) {
+  /*
+     Create a rectangle bitmap
+  */
+  SDL_Surface *temp;
+  Uint32 background;
+
+  temp = SDL_CreateRGBSurface(SDL_SWSURFACE, radio, radio,
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
+
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
+  SDL_FillRect(temp, NULL, background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_TRUE), background);
+
+  FillRectangle(temp, 0, 0, radio, radio, color);
+  DrawRectangle(temp, 0, 0, radio - 1, radio - 1, bcolor);
+
+  return temp;
+}
+
+int DrawText(SDL_Surface *screen, char *text, int x0, int y0, Uint32 color) {
+  /*
+     Draw the text pointer by *text
+     in the position x0,y0
+     with the color color
+   */
+  size_t i, len;
+  int x;
+
+  len = strlen(text);
+  for (i = 0; i < len; i++) {
+    switch (text[i]) {
+    case ' ':
+      x = DrawChar(screen, font_NULL, x0, y0, color);
+      break;
+    case '!':
+      x = DrawChar(screen, font_EXCLAIM, x0, y0, color);
+      break;
+    case '\\':
+      x = DrawChar(screen, font_BACKSLASH, x0, y0, color);
+      break;
+    case '"':
+      x = DrawChar(screen, font_QUOTEDBL, x0, y0, color);
+      break;
+    case '#':
+      x = DrawChar(screen, font_HASH, x0, y0, color);
+      break;
+    case '$':
+      x = DrawChar(screen, font_DOLLAR, x0, y0, color);
+      break;
+    case '%':
+      x = DrawChar(screen, font_CENT, x0, y0, color);
+      break;
+    case '&':
+      x = DrawChar(screen, font_AMPERSAND, x0, y0, color);
+      break;
+    case '\'':
+      x = DrawChar(screen, font_QUOTE, x0, y0, color);
+      break;
+    case '(':
+      x = DrawChar(screen, font_LEFTPAREN, x0, y0, color);
+      break;
+    case ')':
+      x = DrawChar(screen, font_RIGHTPAREN, x0, y0, color);
+      break;
+    case '*':
+      x = DrawChar(screen, font_ASTERISK, x0, y0, color);
+      break;
+    case '+':
+      x = DrawChar(screen, font_PLUS, x0, y0, color);
+      break;
+    case ',':
+      x = DrawChar(screen, font_COMMA, x0, y0, color);
+      break;
+    case '-':
+      x = DrawChar(screen, font_MINUS, x0, y0, color);
+      break;
+    case '.':
+      x = DrawChar(screen, font_DOT, x0, y0, color);
+      break;
+    case '/':
+      x = DrawChar(screen, font_SLASH, x0, y0, color);
+      break;
+    case '0':
+      x = DrawChar(screen, font_0, x0, y0, color);
+      break;
+    case '1':
+      x = DrawChar(screen, font_1, x0, y0, color);
+      break;
+    case '2':
+      x = DrawChar(screen, font_2, x0, y0, color);
+      break;
+    case '3':
+      x = DrawChar(screen, font_3, x0, y0, color);
+      break;
+    case '4':
+      x = DrawChar(screen, font_4, x0, y0, color);
+      break;
+    case '5':
+      x = DrawChar(screen, font_5, x0, y0, color);
+      break;
+    case '6':
+      x = DrawChar(screen, font_6, x0, y0, color);
+      break;
+    case '7':
+      x = DrawChar(screen, font_7, x0, y0, color);
+      break;
+    case '8':
+      x = DrawChar(screen, font_8, x0, y0, color);
+      break;
+    case '9':
+      x = DrawChar(screen, font_9, x0, y0, color);
+      break;
+    case ':':
+      x = DrawChar(screen, font_COLON, x0, y0, color);
+      break;
+    case ';':
+      x = DrawChar(screen, font_SEMICOLON, x0, y0, color);
+      break;
+    case '<':
+      x = DrawChar(screen, font_LESS, x0, y0, color);
+      break;
+    case '=':
+      x = DrawChar(screen, font_EQUALS, x0, y0, color);
+      break;
+    case '>':
+      x = DrawChar(screen, font_GREATER, x0, y0, color);
+      break;
+    case '?':
+      x = DrawChar(screen, font_QUESTION, x0, y0, color);
+      break;
+    case '@':
+      x = DrawChar(screen, font_AT, x0, y0, color);
+      break;
+    case 'A':
+      x = DrawChar(screen, font_A, x0, y0, color);
+      break;
+    case 'B':
+      x = DrawChar(screen, font_B, x0, y0, color);
+      break;
+    case 'C':
+      x = DrawChar(screen, font_C, x0, y0, color);
+      break;
+    case 'D':
+      x = DrawChar(screen, font_D, x0, y0, color);
+      break;
+    case 'E':
+      x = DrawChar(screen, font_E, x0, y0, color);
+      break;
+    case 'F':
+      x = DrawChar(screen, font_F, x0, y0, color);
+      break;
+    case 'G':
+      x = DrawChar(screen, font_G, x0, y0, color);
+      break;
+    case 'H':
+      x = DrawChar(screen, font_H, x0, y0, color);
+      break;
+    case 'I':
+      x = DrawChar(screen, font_I, x0, y0, color);
+      break;
+    case 'J':
+      x = DrawChar(screen, font_J, x0, y0, color);
+      break;
+    case 'K':
+      x = DrawChar(screen, font_K, x0, y0, color);
+      break;
+    case 'L':
+      x = DrawChar(screen, font_L, x0, y0, color);
+      break;
+    case 'M':
+      x = DrawChar(screen, font_M, x0, y0, color);
+      break;
+    case 'N':
+      x = DrawChar(screen, font_N, x0, y0, color);
+      break;
+    case 'O':
+      x = DrawChar(screen, font_O, x0, y0, color);
+      break;
+    case 'P':
+      x = DrawChar(screen, font_P, x0, y0, color);
+      break;
+    case 'Q':
+      x = DrawChar(screen, font_Q, x0, y0, color);
+      break;
+    case 'R':
+      x = DrawChar(screen, font_R, x0, y0, color);
+      break;
+    case 'S':
+      x = DrawChar(screen, font_S, x0, y0, color);
+      break;
+    case 'T':
+      x = DrawChar(screen, font_T, x0, y0, color);
+      break;
+    case 'U':
+      x = DrawChar(screen, font_U, x0, y0, color);
+      break;
+    case 'V':
+      x = DrawChar(screen, font_V, x0, y0, color);
+      break;
+    case 'W':
+      x = DrawChar(screen, font_W, x0, y0, color);
+      break;
+    case 'X':
+      x = DrawChar(screen, font_X, x0, y0, color);
+      break;
+    case 'Y':
+      x = DrawChar(screen, font_Y, x0, y0, color);
+      break;
+    case 'Z':
+      x = DrawChar(screen, font_Z, x0, y0, color);
+      break;
+    case '[':
+      x = DrawChar(screen, font_LEFTBRACKET, x0, y0, color);
+      break;
+    case ']':
+      x = DrawChar(screen, font_RIGHTBRACKET, x0, y0, color);
+      break;
+    case '^':
+      x = DrawChar(screen, font_CARET, x0, y0, color);
+      break;
+    case '_':
+      x = DrawChar(screen, font_UNDERSCORE, x0, y0, color);
+      break;
+    case '`':
+      x = DrawChar(screen, font_BACKQUOTE, x0, y0, color);
+      break;
+    case 'a':
+      x = DrawChar(screen, font_a, x0, y0, color);
+      break;
+    case 'b':
+      x = DrawChar(screen, font_b, x0, y0, color);
+      break;
+    case 'c':
+      x = DrawChar(screen, font_c, x0, y0, color);
+      break;
+    case 'd':
+      x = DrawChar(screen, font_d, x0, y0, color);
+      break;
+    case 'e':
+      x = DrawChar(screen, font_e, x0, y0, color);
+      break;
+    case 'f':
+      x = DrawChar(screen, font_f, x0, y0, color);
+      break;
+    case 'g':
+      x = DrawChar(screen, font_g, x0, y0, color);
+      break;
+    case 'h':
+      x = DrawChar(screen, font_h, x0, y0, color);
+      break;
+    case 'i':
+      x = DrawChar(screen, font_i, x0, y0, color);
+      break;
+    case 'j':
+      x = DrawChar(screen, font_j, x0, y0, color);
+      break;
+    case 'k':
+      x = DrawChar(screen, font_k, x0, y0, color);
+      break;
+    case 'l':
+      x = DrawChar(screen, font_l, x0, y0, color);
+      break;
+    case 'm':
+      x = DrawChar(screen, font_m, x0, y0, color);
+      break;
+    case 'n':
+      x = DrawChar(screen, font_n, x0, y0, color);
+      break;
+    case 'o':
+      x = DrawChar(screen, font_o, x0, y0, color);
+      break;
+    case 'p':
+      x = DrawChar(screen, font_p, x0, y0, color);
+      break;
+    case 'q':
+      x = DrawChar(screen, font_q, x0, y0, color);
+      break;
+    case 'r':
+      x = DrawChar(screen, font_r, x0, y0, color);
+      break;
+    case 's':
+      x = DrawChar(screen, font_s, x0, y0, color);
+      break;
+    case 't':
+      x = DrawChar(screen, font_tt, x0, y0, color);
+      break;
+    case 'u':
+      x = DrawChar(screen, font_u, x0, y0, color);
+      break;
+    case 'v':
+      x = DrawChar(screen, font_v, x0, y0, color);
+      break;
+    case 'w':
+      x = DrawChar(screen, font_w, x0, y0, color);
+      break;
+    case 'x':
+      x = DrawChar(screen, font_x, x0, y0, color);
+      break;
+    case 'y':
+      x = DrawChar(screen, font_y, x0, y0, color);
+      break;
+    case 'z':
+      x = DrawChar(screen, font_z, x0, y0, color);
+      break;
+    case '{':
+      x = DrawChar(screen, font_LEFTKEY, x0, y0, color);
+      break;
+    case '|':
+      x = DrawChar(screen, font_OR, x0, y0, color);
+      break;
+    case '}':
+      x = DrawChar(screen, font_RIGHTKEY, x0, y0, color);
+      break;
+    case '~':
+      x = DrawChar(screen, font_WORM, x0, y0, color);
+      break;
+    default:
+      x = DrawChar(screen, font_NONE, x0, y0, color);
+      break;
+    }
+    x0 += x;
+  }
+  return (x0);
+}
+
+int DrawChar(SDL_Surface *screen, char **text, int x, int y, Uint32 color) {
+  int i, j, k, l;
+  static char str[MAX_WORD_LEN] = "";
+  int lx, ly, c, s;
+  char uno[2] = "+";
+  int scale = 1;
+
+  lx = ly = c = s = 0;
+  if (strlen(text[0]) > MAX_WORD_LEN) {
+    fprintf(stderr, "WARNING: text too long: %s\n", text[0]);
+    fprintf(stderr, "text truncate\n");
+  }
+  strncpy(str, text[0], MAX_WORD_LEN);
+  sscanf(str, "%d%d%d%d", &lx, &ly, &c, &s);
+  for (j = 0, l = 0; j < ly; j++, l += scale) {
+    strncpy(str, text[j + c + 1], MAX_WORD_LEN);
+    for (i = 0, k = 0; i < lx; i++, k += scale) {
+      if (!strncmp(&str[i], uno, 1)) {
+        if (scale == 1) {
+          PutPixel(screen, k + x, y + l, color);
+        } else {
+          int n, m;
+
+          for (m = 0; m < scale; m++)
+            for (n = 0; n < scale; n++)
+              PutPixel(screen, k + x + n, y + l + m, color);
+        }
+      }
+    }
+  }
+  return (scale * lx);
+}
+
+int Sqrt(int n) {
+  /*
+    A sqrt() table of the firts 10000 integer numbers
+  */
+  static int sq[10000];
+  static int cont = 0;
+
+  if (n > 9999) {
+    return ((int)(sqrt((double)n) + .5));
+  }
+  if (n < 0) {
+    fprintf(stderr, "sqrt\n");
+    exit(EXIT_FAILURE);
+  }
+  if (cont == 0) {
+    int i;
+
+    for (i = 0; i < 10000; i++) {
+      sq[i] = (int)(sqrt((double)i) + .5);
+    }
+    cont = 1;
+  }
+  return (sq[n]);
+}
+
+/*****************************************************************************
+ * Higher-level graphics (from graphics.c)
+ *****************************************************************************/
+
+int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
+  /* look for a color name name into the table table returning
+     the rgb values in color
+   */
+  int i;
+  int status = -1;
+
+  for (i = 0; i < MAX_NCOLORS; i++) {
+    if (strncmp(name, table[i].name, MAX_WORD_LEN) == 0) {
+      color->r = table[i].r;
+      color->g = table[i].g;
+      color->b = table[i].b;
+      status = 0;
+      break;
+    }
+  }
+  return (status);
+}
+
+int Led1(SDL_Surface *screen, Uint32 color, int x, int y, int n) {
+  /*
+     Draw in the x,y position the number n as a led  with color color
+
+     4
+     --
+     8 | 1| 2
+     --
+     16 |  | 64
+     --
+     32
+   */
+
+  int x0, x1, y0, y1;
+  int i, j, k, n0;
+  unsigned int number;
+  unsigned int mask[10] = {126, 66, 55, 103, 75, 109, 125, 70, 127, 79};
+  int num[10];
+  int temp;
+  int size = FONTSIZE;
+
+  for (k = 0; k < 10; k++) {
+    n0 = n % 10;
+    num[k] = n0;
+    n = (int)n / 10;
+    if (n <= 0)
+      break;
+  } /* for */
+  /* flip */
+  k++;
+  for (i = 0; i < k / 2; i++) {
+    temp = num[i];
+    num[i] = num[k - 1 - i];
+    num[k - 1 - i] = temp;
+  }
+
+  x0 = x1 = y0 = y1 = 0;
+
+  for (j = 0; j < k; j++) {
+    number = mask[num[j]];
+    for (i = 0; i <= 6; i++) {
+      if (number & 1) {
+        switch (i) {
+        case 0:
+          x0 = 1;
+          y0 = size + 2;
+          x1 = x0 + size;
+          y1 = size + 2;
+          break;
+        case 1:
+          x0 = size + 2;
+          y0 = 1;
+          x1 = size + 2;
+          y1 = y0 + size;
+          break;
+        case 2:
+          x0 = 1;
+          y0 = 0;
+          x1 = x0 + size;
+          y1 = 0;
+          break;
+        case 3:
+          x0 = 0;
+          y0 = 1;
+          x1 = 0;
+          y1 = y0 + size;
+          break;
+        case 4:
+          x0 = 0;
+          y0 = size + 3;
+          x1 = 0;
+          y1 = y0 + size;
+          break;
+        case 5:
+          x0 = 1;
+          y0 = 2 * (size + 1) + 2;
+          x1 = x0 + size;
+          y1 = 2 * (size + 1) + 2;
+          break;
+        case 6:
+          x0 = size + 2;
+          y0 = size + 3;
+          x1 = size + 2;
+          y1 = y0 + size;
+          break;
+        default:
+          printf("error en led\n");
+          exit(EXIT_FAILURE);
+        }
+        DrawLine(screen, x + x0 + j * (6 + size), y + y0,
+                 x + x1 + j * (6 + size), y + y1, color);
+      }
+      number >>= 1;
+    }
+  } /* for j */
+  return (k);
+} /* --led */
+
+void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
+  /*
+     Reads n rgb names and rgb values from the file fname
+     writes the result in the struct color
+   */
+  FILE *fp;
+  int i;
+  int r, g, b;
+  char name[MAX_WORD_LEN] = "";
+  int status;
+  size_t len;
+
+  if ((fp = fopen(fname, "r")) == NULL) {
+    perror(fname);
+    exit(EXIT_FAILURE);
+  }
+  for (i = 0; i < n; i++) {
+    status = fscanf(fp, "%d%d%d%127s", &r, &g, &b, name);
+
+    color[i].r = (Uint8)r;
+    color[i].g = (Uint8)g;
+    color[i].b = (Uint8)b;
+    strncpy(color[i].name, name, MAX_WORD_LEN);
+    if (status == 0) {
+      i--;
+      status = fscanf(fp, "%127s", name);
+      strcat(color[i].name, " ");
+      len = strlen(name);
+      if (len > MAX_WORD_LEN - 1)
+        len = MAX_WORD_LEN - 1;
+      strcat(color[i].name, name);
+    }
+  }
+  fclose(fp);
+}
+
+void DrawArrow(SDL_Surface *screen, SDL_Rect pos, struct Point f, float factor,
+               Uint32 color, int type) {
+  /*
+     draw an arrow in the position pos
+     with size f and reescale by the factor factor
+     with the color color and
+     the type type.
+     types can be:
+     0: a point
+     1: a line
+     2: an arrow
+   */
+
+  float sin_O1, cos_O1;
+  float vx, vy;
+  float r, x, y, x1, y1, x2, y2, x3, y3;
+  float ang1;
+  static float sin_O2 = .8660254038;  //  sin_O2=sin(PI/3.);
+  static float cos_O2 = .5;           //     cos_O2=cos(PI/3.);
+  static float sin_O3 = -.8660254038; //  sin_O3=sin(4.*PI/3.);
+  static float cos_O3 = -.5;          // cos(4.*PI/3.);
+
+  vx = f.x;
+  vy = f.y;
+
+  x = (float)(pos.x) - vx * factor;
+  y = (float)(pos.y) + vy * factor;
+
+  x1 = (float)(pos.x) + vx * factor;
+  y1 = (float)(pos.y) - vy * factor;
+
+  switch (type) {
+  case 0:
+    PutPixel(screen, (int)((x + x1) * .5), (int)((y + y1) * .5), color);
+    break;
+  case 1:
+    DrawLine(screen, (int)x, (int)y, (int)x1, (int)y1, color);
+    break;
+  case 2:
+    DrawLine(screen, (int)x, (int)y, (int)x1, (int)y1, color);
+    ang1 = atan2(y1 - y, x1 - x);
+    r = .5 * sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
+
+    cos_O1 = (float)cos(ang1);
+    sin_O1 = (float)sin(ang1);
+
+    x2 = -r * sin_O2;
+    y2 = -r * cos_O2;
+
+    x3 = x2 * cos_O1 - y2 * sin_O1;
+    y3 = x2 * sin_O1 + y2 * cos_O1;
+
+    DrawLine(screen, (int)x1, (int)y1, (int)(x1 + x3), (int)(y1 + y3), color);
+
+    x2 = r * sin_O3;
+    y2 = -r * cos_O3;
+    x3 = x2 * cos_O1 - y2 * sin_O1;
+    y3 = x2 * sin_O1 + y2 * cos_O1;
+
+    DrawLine(screen, (int)x1, (int)y1, (int)(x1 + x3), (int)(y1 + y3), color);
+    break;
+  default:
+    break;
+  }
+}
+
+void DrawFile(SDL_Surface *screen, Uint32 color, Uint32 border,
+              struct Rectangle rec, struct DataFile df) {
+  /*
+     draw a status bar of an open file *fp
+     in the position given by rec with color color
+   */
+  int i, len;
+  long files, filep;
+
+  files = SizeFile(
+      df.name); // this function opens again the file. look for another way.
+  filep = ftell(df.fp);
+  len = (int)((rec.l - 2) * (float)filep / files);
+
+  DrawRectangle(screen, rec.x, rec.y, rec.x + rec.l, rec.y + rec.h, border);
+  for (i = 1; i < (rec.h) && len > 0; i++) {
+    DrawLine(screen, rec.x + 1, rec.y + i, rec.x + len, rec.y + i, color);
+  }
+
+} /* DrawFile */
+
+void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 bordercolor,
+               struct Values val, int x, int y) {
+  /*
+     draw a cale bar
+     in the position given by x,y
+     with color color
+     with border of color bordercolor.
+   */
+  int i, j;
+  int x0, y0, x1, y1;
+  int w, h;
+  char num[MAX_WORD_LEN] = "";
+  float value;
+  float inc;
+
+  w = 10;
+  h = 2 * MAX_NSCOLORS;
+  x0 = x1 = x - 1;
+  y0 = y - 1;
+  y1 = y + h;
+  DrawLine(screen, x0, y0, x1, y1, bordercolor);
+  x0 = x1;
+  y0 = y1;
+  x1 = x + w + 1;
+  y1 = y0;
+  DrawLine(screen, x0, y0, x1, y1, bordercolor);
+  x0 = x1;
+  y0 = y1;
+  x1 = x + w + 1;
+  y1 = y - 1;
+  DrawLine(screen, x0, y0, x1, y1, bordercolor);
+  x0 = x1;
+  y0 = y1;
+  x1 = x - 1;
+  y1 = y - 1;
+  DrawLine(screen, x0, y0, x1, y1, bordercolor);
+  inc = (val.max_c - val.min_c) / 10;
+  for (i = 0; i <= 10; i++) {
+    x0 = x + w + 2;
+    y0 = y + (float)(h * i) / 10;
+    x1 = x0 + 3;
+    y1 = y0;
+    DrawLine(screen, x0, y0, x1, y1, bordercolor);
+    value = (10. - i) * inc + val.min_c;
+    if (fabs(value) < inc / 1000)
+      value = 0;
+    snprintf(num, MAX_WORD_LEN, "%g", value);
+    DrawText(screen, num, x0 + 5, y0 - 6, bordercolor);
+  }
+
+  for (i = MAX_NSCOLORS - 1, j = 0; i >= 0; i--, j += 2) {
+    DrawLine(screen, x, y + j, x + w, y + j, color[i]);
+    DrawLine(screen, x, y + j + 1, x + w, y + j + 1, color[i]);
+  }
+
+} /* --DrawScale */
+
+void GenColorTable(SDL_Surface *screen, Uint32 *colortable, int type) {
+  /*
+     Generates a color table of type type
+     type can be:
+     RED:
+     GREEN:
+     BLUE:
+     GREY:
+     SPECTRUM:
+   */
+  SDL_Color color1, color2;
+
+  color1.a = 0;
+  color2.a = 0;
+
+  switch (type) {
+  case RED:
+    color1.r = 255;
+    color1.g = 255;
+    color1.b = 0;
+
+    color2.r = 255;
+    color2.g = 0;
+    color2.b = 0;
+
+    GenMiniColorTable(screen, colortable, MAX_NSCOLORS, color1, color2);
+    break;
+  case GREEN:
+
+    color1.r = 0;
+    color1.g = 30;
+    color1.b = 0;
+
+    color2.r = 0;
+    color2.g = 255;
+    color2.b = 0;
+
+    GenMiniColorTable(screen, colortable, MAX_NSCOLORS, color1, color2);
+    break;
+  case BLUE:
+    color1.r = 0;
+    color1.g = 0;
+    color1.b = 30;
+
+    color2.r = 0;
+    color2.g = 0;
+    color2.b = 255;
+
+    GenMiniColorTable(screen, colortable, MAX_NSCOLORS, color1, color2);
+    break;
+  case GREY:
+    color1.r = 30;
+    color1.g = 30;
+    color1.b = 30;
+
+    color2.r = 255;
+    color2.g = 255;
+    color2.b = 255;
+
+    GenMiniColorTable(screen, colortable, MAX_NSCOLORS, color1, color2);
+
+    break;
+  case SPECTRUM:
+  default: {
+    float inc_color;
+    int cont;
+    int fin;
+
+    cont = 0;
+    inc_color = (float)MAX_NSCOLORS / 5.;
+
+    color1.r = 255;
+    color1.g = 0;
+    color1.b = 0;
+
+    color2.r = 255;
+    color2.g = 255;
+    color2.b = 0;
+
+    fin = (int)inc_color;
+    GenMiniColorTable(screen, colortable, fin, color1, color2);
+
+    cont += fin;
+    color1.r = 255;
+    color1.g = 255;
+    color1.b = 0;
+
+    color2.r = 0;
+    color2.g = 255;
+    color2.b = 0;
+    fin = (int)(2. * inc_color - cont);
+    GenMiniColorTable(screen, &colortable[cont], fin, color1, color2);
+
+    cont += fin;
+    color1.r = 0;
+    color1.g = 255;
+    color1.b = 0;
+
+    color2.r = 0;
+    color2.g = 255;
+    color2.b = 255;
+    fin = (int)(3. * inc_color - cont);
+    GenMiniColorTable(screen, &colortable[cont], fin, color1, color2);
+
+    cont += fin;
+    color1.r = 0;
+    color1.g = 255;
+    color1.b = 255;
+
+    color2.r = 0;
+    color2.g = 0;
+    color2.b = 255;
+    fin = (int)(4. * inc_color - cont);
+    GenMiniColorTable(screen, &colortable[cont], fin, color1, color2);
+
+    cont += fin;
+    color1.r = 0;
+    color1.g = 0;
+    color1.b = 255;
+
+    color2.r = 255;
+    color2.g = 0;
+    color2.b = 255;
+    fin = (int)(5. * inc_color - cont);
+    GenMiniColorTable(screen, &colortable[cont], fin, color1, color2);
+  } break;
+  }
+}
+
+void GenMiniColorTable(SDL_Surface *screen, Uint32 *ct, int n, SDL_Color color1,
+                       SDL_Color color2) {
+  /* gen a gradient colortable of n elements between color1 and color2 */
+  int i;
+  float ir, ig, ib;
+  Uint8 r, g, b;
+
+  ir = (float)(color2.r - color1.r) / (float)n;
+  ig = (float)(color2.g - color1.g) / (float)n;
+  ib = (float)(color2.b - color1.b) / (float)n;
+
+  for (i = 0; i < n; i++) {
+    r = (Uint8)(color1.r + ir * i);
+    g = (Uint8)(color1.g + ig * i);
+    b = (Uint8)(color1.b + ib * i);
+    ct[i] = SDL_MapRGB(screen->format, r, g, b);
+  }
+}
+
+void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
+  /*
+    write bitmap to a file
+    to the file name is concatenated a number that increase each time
+  */
+  static int save_cont = 0;
+  char num_file[5] = "";
+  char name[MAX_WORD_LEN] = "";
+  char number[5] = "";
+
+  strncpy(name, fpname, MAX_WORD_LEN);
+  if (save_cont < 10)
+    strcat(number, "0");
+  if (save_cont < 100)
+    strcat(number, "0");
+  if (save_cont < 1000)
+    strcat(number, "0");
+  snprintf(num_file, 5, "%d", save_cont);
+  strcat(number, num_file);
+  // strncat(name,num_file,4);
+  strcat(name, number);
+  strcat(name, ".bmp");
+
+  if (SDL_SaveBMP(bitmap, name) == -1) {
+    fprintf(stderr, "Error saving bitmap\n");
+  }
+
+  if (save_cont < MAXNFILES)
+    save_cont++;
+  else {
+    fprintf(stderr, "Warning: maximun number of files reached.\n");
+  }
+  //  save_cont++;
+  printf("saved: %s\n", name);
+}
+
+void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
+             float z, Uint32 color) {
+  /*
+     Draw a border box
+
+   */
+
+  struct Punto p[8];
+  int i, j, k;
+  int m, n;
+  float minz;
+  int alto;
+  int width, height;
+
+  static int box_d[8][3] = {{2, 5, 7}, {3, 4, 6}, {0, 5, 7}, {1, 4, 6},
+                             {1, 3, 6}, {0, 2, 7}, {1, 3, 4}, {0, 2, 5}};
+  static int box_l[8][3] = {{1, 3, 4}, {0, 2, 5}, {1, 3, 6}, {0, 2, 7},
+                             {0, 5, 7}, {1, 4, 6}, {2, 5, 7}, {3, 4, 6}};
+
+  width = w.w;
+  height = w.h;
+  alto = height;
+  k = 0;
+  minz = box[0].z1;
+
+  for (i = 0; i < 8; i++) {
+    p[i].x = (box[i].x1) * z + c_v.x;
+    p[i].y = (float)(alto - ((box[i].y1) * z + c_v.y));
+
+    if (box[i].z1 < minz) {
+      minz = box[i].z1;
+      k = i;
+    }
+  }
+  if (dim <= 2) {
+    DrawLine(w.screen, (int)p[3].x, (int)p[3].y, (int)p[2].x, (int)p[2].y,
+             color);
+    DrawLine(w.screen, (int)p[2].x, (int)p[2].y, (int)p[6].x, (int)p[6].y,
+             color);
+    DrawLine(w.screen, (int)p[6].x, (int)p[6].y, (int)p[7].x, (int)p[7].y,
+             color);
+    DrawLine(w.screen, (int)p[7].x, (int)p[7].y, (int)p[3].x, (int)p[3].y,
+             color);
+  }
+  if (dim == 3) {
+    for (i = 0; i < 3; i++) {
+      m = box_d[k][i];
+      for (j = 0; j < 3; j++) {
+        n = box_l[m][j];
+        DrawLine(w.screen, (int)p[m].x, (int)p[m].y, (int)p[n].x, (int)p[n].y,
+                 color);
+      }
+    }
+  }
+  DrawLine(w.screen, (int)(width * .5 - 5), (int)(height * .5),
+           (int)(width * .5 + 5), (int)(height * .5), color);
+  DrawLine(w.screen, (int)(width * .5), (int)(height * .5 - 5),
+           (int)(width * .5), (int)(height * .5 + 5), color);
+
+} /*        --DrawBox  */
+
+void InfoColors(struct RGBColor *rgbcolortable) {
+  int i;
+
+  printf("Colors that can be used:\n");
+  printf("format in RGB mode:\nnumberID: red gren blue name\n");
+  for (i = 0; i < MAX_NCOLORS; i++) {
+    printf("%d: %d %d %d %s\n", i, (int)rgbcolortable[i].r,
+           (int)rgbcolortable[i].g, (int)rgbcolortable[i].b,
+           rgbcolortable[i].name);
+  }
+}
+
+/*****************************************************************************
+ * Main app functions (from punto.c)
+ *****************************************************************************/
 
 int ParseEvent(SDL_Event *event) {
   int status;
@@ -2696,7 +5382,6 @@ void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
   /*
      Set the program values from the data values
    */
-
   /*    float max_r,min_r; */
   val->max_r = val_d.max_r;
   val->min_r = val_d.min_r;
