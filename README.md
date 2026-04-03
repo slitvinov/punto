@@ -5,6 +5,10 @@ and displays them as an interactive 3D scene using SDL2.
 
 Originally written by Mariano Revenga (1998-2009).
 
+![3D particles](img/aleatorio3d.png)
+![Death star](img/deathstar.png)
+![Vector field](img/field2d.png)
+
 ## Features
 
 - 1D, 2D, and 3D visualization
