@@ -7,9 +7,8 @@
 #define SQUARE 1
 #define SPHERE 2
 
-//#define PI 3.14159265358979323846
-#define PI 3.141592
-#define INC_ANG PI / 200.;
+#define PI 3.14159265358979323846
+#define INC_ANG (PI / 200.0)
 
 #define ZOOM 0
 #define NAV 1

@@ -141,7 +141,7 @@ void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
     exit(EXIT_FAILURE);
   }
   for (i = 0; i < n; i++) {
-    status = fscanf(fp, "%d%d%d%s", &r, &g, &b, name);
+    status = fscanf(fp, "%d%d%d%127s", &r, &g, &b, name);
 
     color[i].r = (Uint8)r;
     color[i].g = (Uint8)g;
@@ -149,7 +149,7 @@ void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
     strncpy(color[i].name, name, MAX_WORD_LEN);
     if (status == 0) {
       i--;
-      status = fscanf(fp, "%s", name);
+      status = fscanf(fp, "%127s", name);
       strcat(color[i].name, " ");
       len = strlen(name);
       if (len > MAX_WORD_LEN - 1)
@@ -488,13 +488,8 @@ void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
   printf("saved: %s\n", name);
 }
 
-void DrawBox(w, box, dim, c_v, z, color) struct Window w;
-struct Punto *box;
-int dim;
-struct Point c_v;
-float z; // zoom
-Uint32 color;
-{
+void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
+             float z, Uint32 color) {
   /*
      Draw a border box
 

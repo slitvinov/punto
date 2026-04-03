@@ -416,7 +416,7 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
   return (numblock);
 }
 
-struct Block *CreateBlock() {
+struct Block *CreateBlock(void) {
   /* Create a new Block
 
    */
@@ -447,12 +447,16 @@ int TakeWordFromCad(char *word, char *cad) {
    */
 
   char tmp[MAX_LINE_LEN];
+  size_t wlen;
 
-  strcpy(tmp, "");
-  if (ReadWordFromCad(word, cad) == 0)
+  tmp[0] = '\0';
+  wlen = ReadWordFromCad(word, cad);
+  if (wlen == 0)
     return (-1);
-  strcpy(tmp, &cad[strlen(word)]);
-  strcpy(cad, tmp);
+  strncpy(tmp, &cad[wlen], MAX_LINE_LEN - 1);
+  tmp[MAX_LINE_LEN - 1] = '\0';
+  strncpy(cad, tmp, MAX_LINE_LEN - 1);
+  cad[MAX_LINE_LEN - 1] = '\0';
   return ((int)strlen(cad));
 }
 
@@ -468,9 +472,7 @@ size_t ReadWordFromCad(char *word, char *cad) {
   int status = 0;
 
   len = strlen(cad);
-  //  if(len==0)return(0);
 
-  //  printf("WW: %s\n",cad);
   for (i = 0; i < len && i < MAX_LINE_LEN && status == 0; i++) {
 
     switch (cad[i]) {
@@ -485,8 +487,10 @@ size_t ReadWordFromCad(char *word, char *cad) {
       break;
     }
   }
+  if (i >= MAX_WORD_LEN)
+    i = MAX_WORD_LEN - 1;
   strncpy(word, &cad[0], i);
-  strncpy(&word[i], "\0", (size_t)1);
+  word[i] = '\0';
   return (i);
 }
 
@@ -521,12 +525,16 @@ int Trim(char *cad) {
       }
       if (swcl == 1 && swcr == 1)
         break;
-      if (len - cl - cr <= 0)
+      if ((size_t)(cl + cr) >= len)
         break;
     }
-    strncpy(word, &cad[cl], (size_t)(len - cl - cr));
+    if ((size_t)(cl + cr) < len)
+      strncpy(word, &cad[cl], (size_t)(len - cl - cr));
   }
-  word[len - cl - cr] = '\0';
+  if (len > (size_t)(cl + cr))
+    word[len - cl - cr] = '\0';
+  else
+    word[0] = '\0';
   strcpy(cad, word);
   return (0);
 }

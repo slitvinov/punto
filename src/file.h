@@ -12,6 +12,6 @@ int Trim(char *cad);
 size_t ReadWordFromCad(char *word, char *cad);
 int TakeWordFromCad(char *word, char *cad);
 
-struct Block *CreateBlock();
+struct Block *CreateBlock(void);
 int ReadNBlocks(char *fname, struct Block *br, long fpos);
 int ReadRcFile(SDL_Surface *screen, char **, Uint32 *, char *);

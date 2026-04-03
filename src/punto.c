@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <SDL.h>
 #include "punto.h"
@@ -159,12 +160,9 @@ int CheckEvent(SDL_Event *event) {
    * Looking for an interesting event
    */
 
-  while (SDL_PollEvent(NULL) > 0 && status == FALSE) {
-    SDL_PollEvent(event);
+  while (SDL_PollEvent(event) > 0 && status == FALSE) {
     status = ParseEvent(event);
   }
-  /* deleting the rest of events */
-  //  CleanEvent();
 
   return (status);
 }
@@ -844,17 +842,14 @@ int main(int argc, char *argv[]) {
   }
 
   /* Set video mode */
-  // window.flags = SDL_SWSURFACE|SDL_ANYFORMAT|SDL_RESIZABLE;
-  window.flags = (Uint32)(SDL_HWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE |
-                          SDL_DOUBLEBUF | SDL_ASYNCBLIT);
-  //  window.flags = SDL_ANYFORMAT;
+  window.flags = (Uint32)(SDL_SWSURFACE | SDL_ANYFORMAT | SDL_RESIZABLE);
   window.w = WIDTH;
   window.h = HEIGHT;
   if (option.geometria == TRUE) {
     window.w = param.width;
     window.h = param.height;
   }
-  window.bpp = 8;
+  window.bpp = 0;
 
   screen = SDL_SetVideoMode(window.w, window.h, window.bpp, window.flags);
   if (!screen) {
@@ -1499,12 +1494,10 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
     /* Update the screen! */
     if ((screen->flags & SDL_DOUBLEBUF) == SDL_DOUBLEBUF) {
       SDL_Flip(screen);
-      printf(".");
     } else if (option.fast == FALSE || actualizar == TRUE)
       SDL_UpdateRect(screen, 0, 0, 0, 0);
     else {
       SDL_UpdateRect(screen, 0, 0, LEDW, LEDH);
-      printf(".");
     }
     /*      SDL_Flip(screen2); */
     /*      SDL_UpdateRect(screen2, 0,0,LEDW,LEDH); */
@@ -1627,7 +1620,8 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
           fflush(stdout);
         }
 
-        SDL_FreeSurface(bola[idx].surface);
+        if (bola[idx].surface != NULL)
+          SDL_FreeSurface(bola[idx].surface);
         bola[idx].surface = NULL;
         switch (option.type) {
         case CIRCLE:
@@ -1835,16 +1829,21 @@ int DrawPeriodicPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
                        struct Punto *p, long *t, struct Point cw, float z,
                        struct Parametres par, struct Values data) {
   int i, j, k, l;
-  struct Punto *p0;
+  static struct Punto *p0 = NULL;
+  static long p0_size = 0;
   float ix, iy, iz;
   long n1, n2;
   struct Point c;
 
   c = u.cm;
-  if ((p0 = (struct Punto *)malloc((size_t)numactivados *
-                                   sizeof(struct Punto))) == NULL) {
-    perror("malloc");
-    exit(EXIT_FAILURE);
+  if (numactivados > p0_size) {
+    free(p0);
+    if ((p0 = (struct Punto *)malloc((size_t)numactivados *
+                                     sizeof(struct Punto))) == NULL) {
+      perror("malloc");
+      exit(EXIT_FAILURE);
+    }
+    p0_size = numactivados;
   }
 
   ix = val_data.max_x - val_data.min_x;
@@ -1892,7 +1891,6 @@ int DrawPeriodicPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
       break;
   }
 
-  free(p0);
   return (0);
 }
 
@@ -1973,7 +1971,7 @@ void InfoSprites(struct Sprite *b, struct Options opt) {
   int i;
   long mem;
   long cont;
-  long maxpos, minpos;
+  uintptr_t maxpos, minpos;
   static int lastpurge;
   int sw;
 
@@ -1988,21 +1986,21 @@ void InfoSprites(struct Sprite *b, struct Options opt) {
       mem += 100 + 3 * b[i].surface->w * b[i].surface->h;
 
       if (sw == 0) {
-        minpos = (long)b[i].surface;
+        minpos = (uintptr_t)b[i].surface;
         sw = 1;
       }
-      if ((long)b[i].surface < minpos)
-        minpos = (long)b[i].surface;
-      if ((long)b[i].surface > maxpos) {
-        maxpos = (long)b[i].surface;
+      if ((uintptr_t)b[i].surface < minpos)
+        minpos = (uintptr_t)b[i].surface;
+      if ((uintptr_t)b[i].surface > maxpos) {
+        maxpos = (uintptr_t)b[i].surface;
       }
     }
   }
   if (mem) {
     if (option.verbose) {
       printf("num spr: %ld (%ld) mem: %ld\n", cont, numactivados, mem);
-      printf("MAXPOS: %ld MINPOS: %ld dif: %ld\n", maxpos, minpos,
-             maxpos - minpos);
+      printf("MAXPOS: %lu MINPOS: %lu dif: %lu\n", (unsigned long)maxpos,
+             (unsigned long)minpos, (unsigned long)(maxpos - minpos));
       printf("factor: %f\n", ((float)(maxpos - minpos)) / (float)mem);
     }
     if (option.trace)

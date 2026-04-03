@@ -162,12 +162,13 @@ void DrawLine32(SDL_Surface *surf, int x0, int y0, int x1, int y1,
      of color color
    */
 
-  Uint16 *buffer;
+  Uint32 *buffer;
   int drawpos;
   int xspan, yspan;
   int xinc, yinc;
   int sum;
   int i;
+  int pitch4;
 
   /* If we need to lock this surface before drawing pixels, do so. */
   if (SDL_MUSTLOCK(surf)) {
@@ -178,7 +179,8 @@ void DrawLine32(SDL_Surface *surf, int x0, int y0, int x1, int y1,
   }
 
   /* Get the surface's data pointer. */
-  buffer = (Uint16 *)surf->pixels;
+  buffer = (Uint32 *)surf->pixels;
+  pitch4 = surf->pitch / 4;
 
   /* Calculate the x and y spans of the line. */
   xspan = x1 - x0 + 1;
@@ -193,10 +195,10 @@ void DrawLine32(SDL_Surface *surf, int x0, int y0, int x1, int y1,
     xinc = 1;
 
   if (yspan < 0) {
-    yinc = (int)(-surf->pitch / 2);
+    yinc = -pitch4;
     yspan = -yspan;
   } else
-    yinc = (int)(surf->pitch / 2);
+    yinc = pitch4;
 
   i = 0;
   sum = 0;
@@ -208,7 +210,7 @@ void DrawLine32(SDL_Surface *surf, int x0, int y0, int x1, int y1,
      Instead of adding 1 to the x coordinate, we add one to drawpos.
      Instead of adding 1 to the y coordinate, we add the surface's
      pitch (scanline width) to drawpos. */
-  drawpos = (int)(surf->pitch / 2 * y0) + x0;
+  drawpos = pitch4 * y0 + x0;
 
   /* Our loop will be different depending on the
      major axis. */
@@ -375,16 +377,15 @@ SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
   SDL_Surface *temp;
   Uint32 background;
 
-  temp = SDL_CreateRGBSurface(SDL_HWSURFACE, 2 * radio + 1, 2 * radio + 1,
-                              (int)screen->format->BitsPerPixel, 0, 0, 0, 0);
+  temp = SDL_CreateRGBSurface(SDL_SWSURFACE, 2 * radio + 1, 2 * radio + 1,
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
 
-  background = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
-  /* Set transparent pixel as the pixel at (0,0) */
-  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL),
-                  *(Uint8 *)temp->pixels);
+  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
 
-  //  color = SDL_MapRGB(temp->format, 255, 0, 0);
   FillCircle(temp, radio, radio, radio, color);
   DrawCircle(temp, radio, radio, radio, bcolor);
 
@@ -407,22 +408,17 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
   Uint8 r, g, b;
   float inci;
 
-  //  printf("icon in 1: %p\n",sprite);
-  temp = SDL_CreateRGBSurface(SDL_HWSURFACE, 2 * radio + 1, 2 * radio + 1,
-                              (int)screen->format->BitsPerPixel, 0, 0, 0, 0);
+  temp = SDL_CreateRGBSurface(SDL_SWSURFACE, 2 * radio + 1, 2 * radio + 1,
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
   if (temp == NULL) {
     fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError());
     exit(EXIT_FAILURE);
   }
-  background = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
-  /* Set transparent pixel as the pixel at (0,0) */
-  if (screen->format->palette) {
-    SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL),
-                    *(Uint8 *)temp->pixels);
-  }
-  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL),
-                  *(Uint8 *)temp->pixels);
+  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
 
   SDL_GetRGB(color, screen->format, &red, &green, &blue);
   r = red;
@@ -433,11 +429,10 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
   ib = ((float)blue / radio) * .4;
 
   if (radio < 2) {
-    color = SDL_MapRGB(screen->format, r, g, b);
+    color = SDL_MapRGB(temp->format, r, g, b);
     FillCircle(temp, radio, radio, radio, color);
   } else {
     inci = 1;
-    //  if(radio>32)inci=(float)radio/32.;
     inci = (float)radio / 20.;
     if (inci < 1)
       inci = 1;
@@ -445,18 +440,18 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
       r = red - ir * i;
       g = green - ig * i;
       b = blue - ib * i;
-      color = SDL_MapRGB(screen->format, r, g, b);
+      color = SDL_MapRGB(temp->format, r, g, b);
       FillRing(temp, radio, radio, (int)(i), (int)(inci * 1.4142 + .5) + 1,
                color);
     }
   }
 
   sprite = SDL_DisplayFormat(temp);
-  SDL_FreeSurface(temp);
   if (sprite == NULL) {
-    fprintf(stderr, "Couldn't convert background: %s\n", SDL_GetError());
-    return (NULL);
+    /* SDL_DisplayFormat can fail with sdl12-compat; use temp directly */
+    return (temp);
   }
+  SDL_FreeSurface(temp);
   return (sprite);
 }
 
@@ -492,12 +487,14 @@ SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
   Uint32 background;
 
   temp = SDL_CreateRGBSurface(SDL_SWSURFACE, radio, radio,
-                              (int)screen->format->BitsPerPixel, 0, 0, 0, 0);
+                              (int)screen->format->BitsPerPixel,
+                              screen->format->Rmask, screen->format->Gmask,
+                              screen->format->Bmask, screen->format->Amask);
 
-  background = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
+  background = SDL_MapRGB(temp->format, 0x00, 0x00, 0x00);
   SDL_FillRect(temp, NULL, background);
+  SDL_SetColorKey(temp, (Uint32)(SDL_SRCCOLORKEY | SDL_RLEACCEL), background);
 
-  //  color = SDL_MapRGB(temp->format, 255, 0, 0);
   FillRectangle(temp, 0, 0, radio, radio, color);
   DrawRectangle(temp, 0, 0, radio - 1, radio - 1, bcolor);
 
