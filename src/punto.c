@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
 #include <stddef.h>
@@ -42,7 +43,6 @@
 #define TRACE_DEFAULT 50
 #define TRACE_MAX 500 /* max number of trace points */
 
-/* palettes */
 #define SPECTRUM 0
 #define RED 1
 #define GREEN 2
@@ -59,11 +59,6 @@
 #define DEFAULTPALETTE SPECTRUM
 #define DEFAULTRADIO 12
 #define DEFAULTTYPE SPHERE
-
-#define BUFFER_SIZE 8192
-#define CHAR 1
-#define WORD 2
-#define LINE 3
 
 #define COS45 .70710678118654752440
 
@@ -88,7 +83,6 @@ struct Punto {
   float color;
   float vx, vy, vz;
   float vx1, vy1, vz1;
-  int active;
   SDL_Surface *sprite;
 };
 
@@ -120,9 +114,9 @@ struct RGBColor {
 };
 
 struct Block {
-  long pos; /* address to the data file position of the block */
-  long len;
-  long num;           /* number of elements */
+  long pos;
+  long num;
+
   char *comment;      /* pointer to the comment of the block */
   struct Block *next; /* address of the next block */
   struct Block *prev; /* address of the previous block */
@@ -188,14 +182,6 @@ struct Universe {
                               centro visualizacion */
   struct Point escale;
   int psize; /* default size for puntos */
-};
-
-struct _Buffer {
-  size_t i, f;           /* next to read and next to write */
-  FILE *fp;              /* last fiel in use */
-  long fpos;             /* position in the file */
-  int eof;               /* if true EOF reached */
-  char buf[BUFFER_SIZE]; /* buffer max. size */
 };
 
 struct Options {
@@ -265,38 +251,20 @@ struct Parametres {
 #include "fonts-1.xpm"
 #include "rgb.h"
 
-/* forward declarations: buffer */
-size_t _FillBuffer(struct _Buffer *buffer);
-long _RBuffer(char *cad, int, int type, FILE *fp);
-long RChar(char *cad, FILE *fp);
-long RWord(char *cad, int, FILE *fpq);
 long RLine(char *cad, int, FILE *fp);
-
-/* forward declarations: file */
 void GetFileName(int, char **, char *);
 int NumRet(FILE *);
 long CountLines(char *);
 int NColumns(char *);
 int FindChain(char *target, char *cad[], int n);
-int ReadLine(FILE *fp, char *cad);
 int AnalizeLine(char *cad);
 long SizeFile(char *);
-int Trim(char *cad);
-size_t ReadWordFromCad(char *word, char *cad);
-int TakeWordFromCad(char *word, char *cad);
 struct Block *CreateBlock(void);
 int ReadNBlocks(char *fname, struct Block *br, long fpos);
-
-/* forward declarations: maths */
-double aleatorio(double a);
-void Dec2Hex(long int n, char *a);
 void Rapida(long *a, int izq, int drch, struct Punto *p);
 void TCR(float a, float b, float c, long, long, struct Point r, float comp,
          short field, int *reset_box, struct Punto *p);
-
-/* forward declarations: graphics-sdl */
 void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel);
-Uint32 GetPixel(SDL_Surface *surface, int x, int y);
 void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
               Uint32 color);
 void PutPixelCircle(SDL_Surface *screen, int x, int y, int x0, int y0,
@@ -317,11 +285,8 @@ SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
 int DrawText(SDL_Surface *screen, char *text, int x, int y, Uint32 color);
 int DrawChar(SDL_Surface *screen, char **text, int x, int y, Uint32 color);
 int Sqrt(int x);
-
-/* forward declarations: graphics */
 void ReadRGBColors(char *fname, struct RGBColor *color, int n);
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color);
-int Led1(SDL_Surface *screen, Uint32 color, int x, int y, int n);
 void DrawArrow(SDL_Surface *screen, SDL_Rect pos, struct Point f, float factor,
                Uint32 color, int type);
 void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 border, struct Values,
@@ -335,8 +300,6 @@ void WriteBitmap(SDL_Surface *bitmap, char *);
 void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
              float z, Uint32 color);
 void InfoColors(struct RGBColor *rgbcolortable);
-
-/* forward declarations: punto */
 int ParseEvent(SDL_Event *event);
 int CheckEvent(SDL_Event *event);
 int NextEvent(SDL_Event *event);
@@ -376,14 +339,11 @@ void BoxProperties(struct Values val_d, struct Parametres param,
                    struct Options opt, struct Punto *b);
 void SetInitialValues(struct Options *opt, struct Keys *k);
 
-/* global variables */
 char version[] = {"1.0.04"};
 char last_revision[] = {"Jun 2009"};
 
 struct Sprite *bola;
 int numsprites;
-
-long total_memory = 0;
 
 int actualizar = TRUE;
 int ntrace = TRACE_DEFAULT;
@@ -426,310 +386,18 @@ char nocomment[MAX_WORD_LEN] = "No Comment";
 struct Block *broot;
 struct Rectangle filerect;
 
-/*****************************************************************************
- * Buffer functions (from buffer.c)
- *****************************************************************************/
-
-long RChar(char *cad, FILE *fp) {
-  /*
-     Read a char from file fp
-   */
-  long rbytes;
-
-  rbytes = _RBuffer(cad, 1, CHAR, fp);
-  return (rbytes);
-}
-
-long RWord(char *cad, int len, FILE *fp) {
-  /*
-     Read a char from file fp
-   */
-  long rbytes;
-
-  rbytes = _RBuffer(cad, len, WORD, fp);
-  return (rbytes);
-}
-
 long RLine(char *cad, int len, FILE *fp) {
-  /*
-     Read a line from file fp
-   */
-  long rbytes;
-
-  rbytes = _RBuffer(cad, len, LINE, fp);
-  return (rbytes);
+  if (fgets(cad, len, fp) == NULL)
+    return EOF;
+  size_t n = strlen(cad);
+  if (n > 0 && cad[n - 1] == '\n')
+    cad[--n] = '\0';
+  return (long)n;
 }
-
-long _RBuffer(char *cad, int len, int type, FILE *fp) {
-  /*
-     Keep a buffer for a file
-     copy in cad the next char, word or line from the buffer.
-     returns:
-     the number of readed bytes from the file.
-     if EOF is reached returns EOF.
-   */
-  static int init = 0;
-  static struct _Buffer buffer;
-
-  size_t n;
-  int inword;
-  size_t iword, lword; /* position of the first letter and word length */
-  int eow;
-  size_t nbytes, ntbytes;
-  size_t nbytesc;
-  char c;
-
-  strcpy(cad, "\0"); /* delete the chain */
-
-  if (len + 1 > BUFFER_SIZE) {
-    printf("ERROR: word size too long.\n");
-    printf("\t word size: %d max. size: %d\n", len, BUFFER_SIZE);
-    exit(EXIT_FAILURE);
-  }
-
-  if (init == 0) { /* initialize the buffer  */
-
-    buffer.i = 0;
-    buffer.f = 0;
-    buffer.eof = 0;
-    buffer.fp = fp;
-    buffer.fpos = ftell(fp);
-    n = _FillBuffer(&buffer);
-
-    if (n == 0 && buffer.eof) { /* EOF */
-      return (EOF);
-    }
-    init++;
-  }
-
-  /* check if the buffer is valid */
-  if (buffer.fp != fp || ftell(fp) != buffer.fpos) { /* buffer not valid */
-    buffer.i = 0;
-    buffer.f = 0;
-    buffer.fp = fp;
-    buffer.fpos = ftell(fp);
-    n = _FillBuffer(&buffer);
-    if (n == 0 && buffer.eof) { /* EOF */
-      return (EOF);
-    }
-  }
-
-  /* al least one element */
-  if (buffer.f == buffer.i) {
-
-    n = _FillBuffer(&buffer);
-    if (n == 0 && buffer.eof) { /* EOF */ /* may be an error, HERE */
-      return (EOF);
-    }
-    if (n == 0 && !buffer.eof) {
-      fprintf(stderr, "ERROR 1 in ReadBuffer()\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  nbytes = 0;
-  ntbytes = 0;
-  nbytesc = 0;
-
-  switch (type) {
-  case CHAR:
-    if (buffer.f - buffer.i > 0) {
-      memcpy(cad, &buffer.buf[buffer.i], 1);
-      buffer.i++;
-      nbytes++;
-      ntbytes++;
-    } else {
-      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
-      exit(EXIT_FAILURE);
-    }
-    break;
-
-  case WORD:
-    inword = 0;
-    iword = lword = 0;
-    eow = 0;
-    do {
-      c = buffer.buf[buffer.i + lword + iword]; /* read a char */
-
-      switch (c) {
-      case ' ':
-      case '\t':
-        if (inword == 0) {
-          iword++;
-        }
-        if (inword == 1) {
-          eow = 1;
-        }
-
-        break;
-      case '\n':
-        eow = 1;
-        break;
-      default:
-        inword = 1;
-        lword++;
-
-        break;
-      }
-      nbytes++;
-      ntbytes++;
-
-      /* if buffer is empty refill */
-      if (buffer.i + nbytes == buffer.f) {
-        n = _FillBuffer(&buffer);
-        if (n == 0 && buffer.eof) { /* EOF */
-          eow = 1;
-        }
-      }
-    } while (eow == 0);
-
-    if (lword > 0) { // buffer overrun
-      if (lword < (size_t)len) {
-        memcpy(cad, &buffer.buf[buffer.i + iword], lword);
-      } else {
-        fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n", len);
-        memcpy(cad, &buffer.buf[buffer.i + iword], (size_t)len - 1);
-        lword = (size_t)len - 1;
-      }
-    }
-    buffer.i += nbytes;
-
-    /* end of string */
-    if (lword < (size_t)len - 1) {
-      strcpy(&cad[lword], "\0");
-    } else {
-      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
-      fprintf(stderr, "Line too long. ReadBuffer()\n");
-      exit(EXIT_FAILURE);
-    }
-    break;
-
-  case LINE:
-    lword = 0;
-    eow = 0;
-    do {
-      c = buffer.buf[buffer.i + lword]; /* read a char */
-
-      switch (c) {
-      case '\n':
-        eow = 1;
-        break;
-      default:
-        lword++;
-        break;
-      }
-      nbytes++;
-      ntbytes++;
-      /* if buffer is empty refill */
-      if (buffer.i + nbytes == buffer.f) {
-        if (lword > 0) {
-          // buffer overrun
-          if (nbytesc + lword < (size_t)len) {
-            memcpy(&cad[nbytesc], &buffer.buf[buffer.i], lword);
-          } else {
-            fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n",
-                    len);
-            memcpy(&cad[nbytesc], &buffer.buf[buffer.i], len - nbytesc - 1);
-            lword = len - nbytesc - 1;
-          }
-
-          buffer.i += nbytes;
-          nbytesc += lword;
-          buffer.i = buffer.f = 0;
-          lword = 0;
-          nbytes = 0;
-        }
-        n = _FillBuffer(&buffer);
-        if (n == 0 && buffer.eof) { /* EOF */
-          eow = 1;
-        }
-      }
-    } while (eow == 0);
-
-    if (lword > 0) {
-      // buffer overrun
-      if (nbytesc + lword < (size_t)len) {
-        memcpy(&cad[nbytesc], &buffer.buf[buffer.i], lword);
-      } else {
-        fprintf(stderr, "Warning. Line too long, truncated to %d bytes\n", len);
-        memcpy(&cad[nbytesc], &buffer.buf[buffer.i], len - nbytesc - 1);
-        lword = len - nbytesc - 1;
-      }
-      nbytesc += lword;
-    }
-    buffer.i += nbytes;
-
-    /* end of string */
-    if (lword < (size_t)len - 1) {
-      strcpy(&cad[nbytesc], "\0");
-    } else {
-      fprintf(stderr, "this line musnt be reached. ReadBuffer()\n");
-      fprintf(stderr, "Line too long. ReadBuffer()\n");
-      exit(EXIT_FAILURE);
-    }
-    break; // LINE
-  default:
-    break;
-  }
-
-  /* return values */
-  if (nbytes == 0) {
-    if (buffer.eof && buffer.i == buffer.f && nbytesc == 0)
-      return (EOF);
-  }
-  return (ntbytes);
-}
-
-size_t _FillBuffer(struct _Buffer *buffer) {
-  /*
-     fill the buffer with file data
-   */
-  size_t nbytes; /* bytes to read */
-  size_t n;
-
-  if (feof(buffer->fp) != 0) {
-    buffer->eof = 1;
-    return (0);
-  }
-  if (buffer->i != 0) { /* moving data */
-    memmove(&buffer->buf[0], &buffer->buf[buffer->i], buffer->f - buffer->i);
-    buffer->f = buffer->f - buffer->i;
-    buffer->i = 0;
-  }
-
-  nbytes = BUFFER_SIZE - buffer->f;
-
-  n = fread(&buffer->buf[buffer->f], 1, nbytes, buffer->fp);
-
-  if (feof(buffer->fp) != 0)
-    buffer->eof = 1;
-
-  if (n > 0) {
-    buffer->f += n;
-    buffer->fpos = ftell(buffer->fp);
-  }
-  return (n);
-}
-
-/*****************************************************************************
- * File functions (from file.c)
- *****************************************************************************/
 
 void GetFileName(int argc, char *argv[], char *fname) {
-  /* Gets the name of the file data.
-   *  Must be the last argument at the line comand arguments
-   */
-
-  if (strlen(argv[argc - 1]) >= MAX_WORD_LEN) {
-    fprintf(stderr, "File name too long. Max. length: %d characters\n",
-            MAX_WORD_LEN);
-    exit(EXIT_FAILURE);
-  }
-
-  strncpy(fname, argv[argc - 1], MAX_WORD_LEN);
-  strncpy(&fname[MAX_WORD_LEN - 1], "\0", 1);
-
-} /* --funtion GetFileName  */
+  snprintf(fname, MAX_WORD_LEN, "%s", argv[argc - 1]);
+}
 
 int NumRet(FILE *fp) {
   /* end of block ?
@@ -937,68 +605,25 @@ int FindChain(char *target, char *cad[], int n) {
 }
 
 int AnalizeLine(char *cad) {
-  /* return the type of the line:
-     0 empty, return
-     -1, end-of-file
-     1 comment line
-     2 dataline
-   */
   int i;
-  size_t len;
-  int status;
-
-  len = strlen(cad);
-  /* look for the first valid character */
-  status = 0;
-  for (i = 0; i < (int)len && i < MAX_LINE_LEN; i++) {
-    /* look for a letter */
-    if (strncmp(&cad[i], "a", 1) >= 0 && strncmp(&cad[i], "z", 1) <= 0)
-      return (COMMENT);
-    if (strncmp(&cad[i], "A", 1) >= 0 && strncmp(&cad[i], "Z", 1) <= 0)
-      return (COMMENT);
-    /* --look for a letter */
-    if (status == 0) {
-      switch (cad[i]) {
-      case ' ':
-      case '\t':
-        break;
-      case '\n':
-        status = RETURN;
-        break;
-      case '#':
-      case '%':
-        status = COMMENT;
-        break;
-      default:
-        status = DATA;
-        break;
-      }
-    }
-    if (status)
-      break;
+  for (i = 0; cad[i]; i++) {
+    if (isalpha(cad[i]) || cad[i] == '#' || cad[i] == '%')
+      return COMMENT;
+    if (cad[i] == '\n')
+      return RETURN;
+    if (cad[i] != ' ' && cad[i] != '\t')
+      return DATA;
   }
-  return (status);
+  return 0;
 }
 
 long SizeFile(char *filename) {
-  /*
-     the file changes ?
-     return the size of the file filename
-  */
-  int fd;
   struct stat info;
-
-  if ((fd = open(filename, O_RDONLY)) == -1) {
+  if (stat(filename, &info) == -1) {
     perror(filename);
     exit(EXIT_FAILURE);
   }
-  info.st_size = 0;
-  if (fstat(fd, &info) == -1) {
-    perror(filename);
-    exit(EXIT_FAILURE);
-  }
-  close(fd);
-  return (info.st_size);
+  return info.st_size;
 }
 
 int ReadNBlocks(char *fname, struct Block *br, long fpos) {
@@ -1087,7 +712,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
           lastb->next = 0;
           lastb->pos = file_pos;
           lastb->num = 0;
-          lastb->len = 0;
         }
       }
     }
@@ -1116,13 +740,12 @@ struct Block *CreateBlock(void) {
    */
   struct Block *bloque;
 
-  if ((bloque = (struct Block *)malloc(sizeof(struct Block))) == NULL) {
+  if ((bloque = malloc(sizeof(struct Block))) == NULL) {
     perror("malloc");
     exit(EXIT_FAILURE);
   }
 
   bloque->pos = 0;
-  bloque->len = 0;
   bloque->num = 0;
   bloque->comment = NULL;
   bloque->next = NULL;
@@ -1130,147 +753,6 @@ struct Block *CreateBlock(void) {
 
   return (bloque);
 }
-
-int TakeWordFromCad(char *word, char *cad) {
-  /* copy the first word of cad copying it in word,
-     word is removed from cad
-     returns:
-     the lenght of the new cad or
-     -1 if the original cad had zero lenght
-   */
-
-  char tmp[MAX_LINE_LEN];
-  size_t wlen;
-
-  tmp[0] = '\0';
-  wlen = ReadWordFromCad(word, cad);
-  if (wlen == 0)
-    return (-1);
-  strncpy(tmp, &cad[wlen], MAX_LINE_LEN - 1);
-  tmp[MAX_LINE_LEN - 1] = '\0';
-  strncpy(cad, tmp, MAX_LINE_LEN - 1);
-  cad[MAX_LINE_LEN - 1] = '\0';
-  return ((int)strlen(cad));
-}
-
-size_t ReadWordFromCad(char *word, char *cad) {
-  /* Read the first word of the chain cad and put it in word
-     Don't change cad
-     return values:
-     if cad is an empty chain returns 0 else
-     return the lenght of word
-   */
-  size_t i = 0;
-  size_t len = 0;
-  int status = 0;
-
-  len = strlen(cad);
-
-  for (i = 0; i < len && i < MAX_LINE_LEN && status == 0; i++) {
-
-    switch (cad[i]) {
-    case ' ':
-    case '\t':
-    case '#':
-    case '%':
-    case '\n':
-      status = 1;
-      break;
-    default:
-      break;
-    }
-  }
-  if (i >= MAX_WORD_LEN)
-    i = MAX_WORD_LEN - 1;
-  strncpy(word, &cad[0], i);
-  word[i] = '\0';
-  return (i);
-}
-
-int Trim(char *cad) {
-  /* Remove the blank characteres an the beginning and
-     at the end of the chain cad
-   */
-
-  size_t i;
-  int cl, cr;
-  int swcl, swcr;
-  size_t len;
-  char word[MAX_LINE_LEN];
-
-  cl = cr = 0;
-  swcl = swcr = 0;
-  len = strlen(cad);
-
-  if (len) {
-    for (i = 0; i < len && i < MAX_LINE_LEN; i++) {
-      if (swcl == 0) {
-        if (cad[i] == ' ' || cad[i] == '\t')
-          cl++;
-        else
-          swcl = 1;
-      }
-      if (swcr == 0) {
-        if (cad[len - i - 1] == ' ' || cad[len - i - 1] == '\t')
-          cr++;
-        else
-          swcr = 1;
-      }
-      if (swcl == 1 && swcr == 1)
-        break;
-      if ((size_t)(cl + cr) >= len)
-        break;
-    }
-    if ((size_t)(cl + cr) < len)
-      strncpy(word, &cad[cl], (size_t)(len - cl - cr));
-  }
-  if (len > (size_t)(cl + cr))
-    word[len - cl - cr] = '\0';
-  else
-    word[0] = '\0';
-  strcpy(cad, word);
-  return (0);
-}
-
-int ReadLine(FILE *fp, char *cad) {
-  /* Read a line from the file fp and copy it in the string pointer by cad.
-     returns:
-     the number of elements readed.
-     if EOF is reached returns EOF
-   */
-  char c;
-  int i;
-  size_t status = 0;
-
-  i = 0;
-  status = fread(&c, sizeof(char), 1, fp);
-  while (status > 0 && c != '\n' && i < MAX_LINE_LEN - 1) {
-    memcpy(&cad[i], &c, 1);
-    status = fread(&c, sizeof(char), 1, fp);
-    i++;
-  }
-  if (c == '\n') { //  endofline
-    cad[i] = '\0';
-    return (i);
-  } else {
-    if (status <= 0) { // endoffile
-      if (feof(fp) != 0)
-        return (EOF);
-      else {
-        printf("ERROR: error reading file.\n");
-        exit(EXIT_FAILURE);
-      }
-    } else { // endofbuffer
-      printf("ERROR: line too long. Exceeds max size: %d Bytes\n",
-             MAX_LINE_LEN);
-      exit(EXIT_FAILURE);
-    }
-  }
-}
-
-/*****************************************************************************
- * Math functions (from maths.c)
- *****************************************************************************/
 
 void TCR(float a, float b, float c, long n1, long n2, struct Point r,
          float comp, short field, int *reset_box, struct Punto *p) {
@@ -1415,42 +897,7 @@ void Rapida(long *a, int izq, int drch, struct Punto *p)
     Rapida(a, izq, j, p);
   if (i < drch)
     Rapida(a, i, drch, p);
-} /* --funcion Rapida */
-
-void Dec2Hex(long n, char *a) {
-  /*
-     return in the char string a the HEX value of the integer number n.
-   */
-  char *num[16] = {"0", "1", "2", "3", "4", "5", "6", "7",
-                   "8", "9", "a", "b", "c", "d", "e", "f"};
-
-  long i, j;
-
-  while (n > 255)
-    n /= 256;
-
-  strcpy(a, "");
-
-  i = n / 16;
-  j = n % 16;
-  strncat(a, num[i], 1);
-  strncat(a, num[j], 1);
 }
-
-double aleatorio(double a) {
-  /*
-     return a random value between 0 and a.
-   */
-
-  double b;
-
-  b = ((double)rand() / RAND_MAX * a);
-  return b;
-}
-
-/*****************************************************************************
- * SDL Graphics primitives (from graphics-sdl.c)
- *****************************************************************************/
 
 void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 /*
@@ -1498,38 +945,6 @@ void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
   case 4:
     *(Uint32 *)p = pixel;
     break;
-  }
-}
-
-Uint32 GetPixel(SDL_Surface *surface, int x, int y)
-/*
- * Return the pixel value at (x, y)
- * NOTE: The surface must be locked before calling this!
- */
-{
-  Uint8 bpp = surface->format->BytesPerPixel;
-
-  /* Here p is the address to the pixel we want to retrieve */
-  Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-
-  switch (bpp) {
-  case 1:
-    return *p;
-
-  case 2:
-    return *(Uint16 *)p;
-
-  case 3:
-    if (SDL_BYTEORDER == SDL_BIG_ENDIAN)
-      return p[0] << 16 | p[1] << 8 | p[2];
-    else
-      return p[0] | p[1] << 8 | p[2] << 16;
-
-  case 4:
-    return *(Uint32 *)p;
-
-  default:
-    return 0; /* shouldn't happen, but avoids warnings */
   }
 }
 
@@ -1829,306 +1244,117 @@ SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
 }
 
 int DrawText(SDL_Surface *screen, char *text, int x0, int y0, Uint32 color) {
-  /*
-     Draw the text pointer by *text
-     in the position x0,y0
-     with the color color
-   */
+  static char **font_table[128];
+  static int init = 0;
   size_t i, len;
   int x;
+  unsigned char ch;
+
+  if (!init) {
+    for (i = 0; i < 128; i++)
+      font_table[i] = font_NONE;
+    font_table[' '] = font_NULL;
+    font_table['!'] = font_EXCLAIM;
+    font_table['\\'] = font_BACKSLASH;
+    font_table['"'] = font_QUOTEDBL;
+    font_table['#'] = font_HASH;
+    font_table['$'] = font_DOLLAR;
+    font_table['%'] = font_CENT;
+    font_table['&'] = font_AMPERSAND;
+    font_table['\''] = font_QUOTE;
+    font_table['('] = font_LEFTPAREN;
+    font_table[')'] = font_RIGHTPAREN;
+    font_table['*'] = font_ASTERISK;
+    font_table['+'] = font_PLUS;
+    font_table[','] = font_COMMA;
+    font_table['-'] = font_MINUS;
+    font_table['.'] = font_DOT;
+    font_table['/'] = font_SLASH;
+    font_table['0'] = font_0;
+    font_table['1'] = font_1;
+    font_table['2'] = font_2;
+    font_table['3'] = font_3;
+    font_table['4'] = font_4;
+    font_table['5'] = font_5;
+    font_table['6'] = font_6;
+    font_table['7'] = font_7;
+    font_table['8'] = font_8;
+    font_table['9'] = font_9;
+    font_table[':'] = font_COLON;
+    font_table[';'] = font_SEMICOLON;
+    font_table['<'] = font_LESS;
+    font_table['='] = font_EQUALS;
+    font_table['>'] = font_GREATER;
+    font_table['?'] = font_QUESTION;
+    font_table['@'] = font_AT;
+    font_table['A'] = font_A;
+    font_table['B'] = font_B;
+    font_table['C'] = font_C;
+    font_table['D'] = font_D;
+    font_table['E'] = font_E;
+    font_table['F'] = font_F;
+    font_table['G'] = font_G;
+    font_table['H'] = font_H;
+    font_table['I'] = font_I;
+    font_table['J'] = font_J;
+    font_table['K'] = font_K;
+    font_table['L'] = font_L;
+    font_table['M'] = font_M;
+    font_table['N'] = font_N;
+    font_table['O'] = font_O;
+    font_table['P'] = font_P;
+    font_table['Q'] = font_Q;
+    font_table['R'] = font_R;
+    font_table['S'] = font_S;
+    font_table['T'] = font_T;
+    font_table['U'] = font_U;
+    font_table['V'] = font_V;
+    font_table['W'] = font_W;
+    font_table['X'] = font_X;
+    font_table['Y'] = font_Y;
+    font_table['Z'] = font_Z;
+    font_table['['] = font_LEFTBRACKET;
+    font_table[']'] = font_RIGHTBRACKET;
+    font_table['^'] = font_CARET;
+    font_table['_'] = font_UNDERSCORE;
+    font_table['`'] = font_BACKQUOTE;
+    font_table['a'] = font_a;
+    font_table['b'] = font_b;
+    font_table['c'] = font_c;
+    font_table['d'] = font_d;
+    font_table['e'] = font_e;
+    font_table['f'] = font_f;
+    font_table['g'] = font_g;
+    font_table['h'] = font_h;
+    font_table['i'] = font_i;
+    font_table['j'] = font_j;
+    font_table['k'] = font_k;
+    font_table['l'] = font_l;
+    font_table['m'] = font_m;
+    font_table['n'] = font_n;
+    font_table['o'] = font_o;
+    font_table['p'] = font_p;
+    font_table['q'] = font_q;
+    font_table['r'] = font_r;
+    font_table['s'] = font_s;
+    font_table['t'] = font_tt;
+    font_table['u'] = font_u;
+    font_table['v'] = font_v;
+    font_table['w'] = font_w;
+    font_table['x'] = font_x;
+    font_table['y'] = font_y;
+    font_table['z'] = font_z;
+    font_table['{'] = font_LEFTKEY;
+    font_table['|'] = font_OR;
+    font_table['}'] = font_RIGHTKEY;
+    font_table['~'] = font_WORM;
+    init = 1;
+  }
 
   len = strlen(text);
   for (i = 0; i < len; i++) {
-    switch (text[i]) {
-    case ' ':
-      x = DrawChar(screen, font_NULL, x0, y0, color);
-      break;
-    case '!':
-      x = DrawChar(screen, font_EXCLAIM, x0, y0, color);
-      break;
-    case '\\':
-      x = DrawChar(screen, font_BACKSLASH, x0, y0, color);
-      break;
-    case '"':
-      x = DrawChar(screen, font_QUOTEDBL, x0, y0, color);
-      break;
-    case '#':
-      x = DrawChar(screen, font_HASH, x0, y0, color);
-      break;
-    case '$':
-      x = DrawChar(screen, font_DOLLAR, x0, y0, color);
-      break;
-    case '%':
-      x = DrawChar(screen, font_CENT, x0, y0, color);
-      break;
-    case '&':
-      x = DrawChar(screen, font_AMPERSAND, x0, y0, color);
-      break;
-    case '\'':
-      x = DrawChar(screen, font_QUOTE, x0, y0, color);
-      break;
-    case '(':
-      x = DrawChar(screen, font_LEFTPAREN, x0, y0, color);
-      break;
-    case ')':
-      x = DrawChar(screen, font_RIGHTPAREN, x0, y0, color);
-      break;
-    case '*':
-      x = DrawChar(screen, font_ASTERISK, x0, y0, color);
-      break;
-    case '+':
-      x = DrawChar(screen, font_PLUS, x0, y0, color);
-      break;
-    case ',':
-      x = DrawChar(screen, font_COMMA, x0, y0, color);
-      break;
-    case '-':
-      x = DrawChar(screen, font_MINUS, x0, y0, color);
-      break;
-    case '.':
-      x = DrawChar(screen, font_DOT, x0, y0, color);
-      break;
-    case '/':
-      x = DrawChar(screen, font_SLASH, x0, y0, color);
-      break;
-    case '0':
-      x = DrawChar(screen, font_0, x0, y0, color);
-      break;
-    case '1':
-      x = DrawChar(screen, font_1, x0, y0, color);
-      break;
-    case '2':
-      x = DrawChar(screen, font_2, x0, y0, color);
-      break;
-    case '3':
-      x = DrawChar(screen, font_3, x0, y0, color);
-      break;
-    case '4':
-      x = DrawChar(screen, font_4, x0, y0, color);
-      break;
-    case '5':
-      x = DrawChar(screen, font_5, x0, y0, color);
-      break;
-    case '6':
-      x = DrawChar(screen, font_6, x0, y0, color);
-      break;
-    case '7':
-      x = DrawChar(screen, font_7, x0, y0, color);
-      break;
-    case '8':
-      x = DrawChar(screen, font_8, x0, y0, color);
-      break;
-    case '9':
-      x = DrawChar(screen, font_9, x0, y0, color);
-      break;
-    case ':':
-      x = DrawChar(screen, font_COLON, x0, y0, color);
-      break;
-    case ';':
-      x = DrawChar(screen, font_SEMICOLON, x0, y0, color);
-      break;
-    case '<':
-      x = DrawChar(screen, font_LESS, x0, y0, color);
-      break;
-    case '=':
-      x = DrawChar(screen, font_EQUALS, x0, y0, color);
-      break;
-    case '>':
-      x = DrawChar(screen, font_GREATER, x0, y0, color);
-      break;
-    case '?':
-      x = DrawChar(screen, font_QUESTION, x0, y0, color);
-      break;
-    case '@':
-      x = DrawChar(screen, font_AT, x0, y0, color);
-      break;
-    case 'A':
-      x = DrawChar(screen, font_A, x0, y0, color);
-      break;
-    case 'B':
-      x = DrawChar(screen, font_B, x0, y0, color);
-      break;
-    case 'C':
-      x = DrawChar(screen, font_C, x0, y0, color);
-      break;
-    case 'D':
-      x = DrawChar(screen, font_D, x0, y0, color);
-      break;
-    case 'E':
-      x = DrawChar(screen, font_E, x0, y0, color);
-      break;
-    case 'F':
-      x = DrawChar(screen, font_F, x0, y0, color);
-      break;
-    case 'G':
-      x = DrawChar(screen, font_G, x0, y0, color);
-      break;
-    case 'H':
-      x = DrawChar(screen, font_H, x0, y0, color);
-      break;
-    case 'I':
-      x = DrawChar(screen, font_I, x0, y0, color);
-      break;
-    case 'J':
-      x = DrawChar(screen, font_J, x0, y0, color);
-      break;
-    case 'K':
-      x = DrawChar(screen, font_K, x0, y0, color);
-      break;
-    case 'L':
-      x = DrawChar(screen, font_L, x0, y0, color);
-      break;
-    case 'M':
-      x = DrawChar(screen, font_M, x0, y0, color);
-      break;
-    case 'N':
-      x = DrawChar(screen, font_N, x0, y0, color);
-      break;
-    case 'O':
-      x = DrawChar(screen, font_O, x0, y0, color);
-      break;
-    case 'P':
-      x = DrawChar(screen, font_P, x0, y0, color);
-      break;
-    case 'Q':
-      x = DrawChar(screen, font_Q, x0, y0, color);
-      break;
-    case 'R':
-      x = DrawChar(screen, font_R, x0, y0, color);
-      break;
-    case 'S':
-      x = DrawChar(screen, font_S, x0, y0, color);
-      break;
-    case 'T':
-      x = DrawChar(screen, font_T, x0, y0, color);
-      break;
-    case 'U':
-      x = DrawChar(screen, font_U, x0, y0, color);
-      break;
-    case 'V':
-      x = DrawChar(screen, font_V, x0, y0, color);
-      break;
-    case 'W':
-      x = DrawChar(screen, font_W, x0, y0, color);
-      break;
-    case 'X':
-      x = DrawChar(screen, font_X, x0, y0, color);
-      break;
-    case 'Y':
-      x = DrawChar(screen, font_Y, x0, y0, color);
-      break;
-    case 'Z':
-      x = DrawChar(screen, font_Z, x0, y0, color);
-      break;
-    case '[':
-      x = DrawChar(screen, font_LEFTBRACKET, x0, y0, color);
-      break;
-    case ']':
-      x = DrawChar(screen, font_RIGHTBRACKET, x0, y0, color);
-      break;
-    case '^':
-      x = DrawChar(screen, font_CARET, x0, y0, color);
-      break;
-    case '_':
-      x = DrawChar(screen, font_UNDERSCORE, x0, y0, color);
-      break;
-    case '`':
-      x = DrawChar(screen, font_BACKQUOTE, x0, y0, color);
-      break;
-    case 'a':
-      x = DrawChar(screen, font_a, x0, y0, color);
-      break;
-    case 'b':
-      x = DrawChar(screen, font_b, x0, y0, color);
-      break;
-    case 'c':
-      x = DrawChar(screen, font_c, x0, y0, color);
-      break;
-    case 'd':
-      x = DrawChar(screen, font_d, x0, y0, color);
-      break;
-    case 'e':
-      x = DrawChar(screen, font_e, x0, y0, color);
-      break;
-    case 'f':
-      x = DrawChar(screen, font_f, x0, y0, color);
-      break;
-    case 'g':
-      x = DrawChar(screen, font_g, x0, y0, color);
-      break;
-    case 'h':
-      x = DrawChar(screen, font_h, x0, y0, color);
-      break;
-    case 'i':
-      x = DrawChar(screen, font_i, x0, y0, color);
-      break;
-    case 'j':
-      x = DrawChar(screen, font_j, x0, y0, color);
-      break;
-    case 'k':
-      x = DrawChar(screen, font_k, x0, y0, color);
-      break;
-    case 'l':
-      x = DrawChar(screen, font_l, x0, y0, color);
-      break;
-    case 'm':
-      x = DrawChar(screen, font_m, x0, y0, color);
-      break;
-    case 'n':
-      x = DrawChar(screen, font_n, x0, y0, color);
-      break;
-    case 'o':
-      x = DrawChar(screen, font_o, x0, y0, color);
-      break;
-    case 'p':
-      x = DrawChar(screen, font_p, x0, y0, color);
-      break;
-    case 'q':
-      x = DrawChar(screen, font_q, x0, y0, color);
-      break;
-    case 'r':
-      x = DrawChar(screen, font_r, x0, y0, color);
-      break;
-    case 's':
-      x = DrawChar(screen, font_s, x0, y0, color);
-      break;
-    case 't':
-      x = DrawChar(screen, font_tt, x0, y0, color);
-      break;
-    case 'u':
-      x = DrawChar(screen, font_u, x0, y0, color);
-      break;
-    case 'v':
-      x = DrawChar(screen, font_v, x0, y0, color);
-      break;
-    case 'w':
-      x = DrawChar(screen, font_w, x0, y0, color);
-      break;
-    case 'x':
-      x = DrawChar(screen, font_x, x0, y0, color);
-      break;
-    case 'y':
-      x = DrawChar(screen, font_y, x0, y0, color);
-      break;
-    case 'z':
-      x = DrawChar(screen, font_z, x0, y0, color);
-      break;
-    case '{':
-      x = DrawChar(screen, font_LEFTKEY, x0, y0, color);
-      break;
-    case '|':
-      x = DrawChar(screen, font_OR, x0, y0, color);
-      break;
-    case '}':
-      x = DrawChar(screen, font_RIGHTKEY, x0, y0, color);
-      break;
-    case '~':
-      x = DrawChar(screen, font_WORM, x0, y0, color);
-      break;
-    default:
-      x = DrawChar(screen, font_NONE, x0, y0, color);
-      break;
-    }
+    ch = (unsigned char)text[i];
+    x = DrawChar(screen, ch < 128 ? font_table[ch] : font_NONE, x0, y0, color);
     x0 += x;
   }
   return (x0);
@@ -2192,10 +1418,6 @@ int Sqrt(int n) {
   return (sq[n]);
 }
 
-/*****************************************************************************
- * Higher-level graphics (from graphics.c)
- *****************************************************************************/
-
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
   /* look for a color name name into the table table returning
      the rgb values in color
@@ -2214,104 +1436,6 @@ int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
   }
   return (status);
 }
-
-int Led1(SDL_Surface *screen, Uint32 color, int x, int y, int n) {
-  /*
-     Draw in the x,y position the number n as a led  with color color
-
-     4
-     --
-     8 | 1| 2
-     --
-     16 |  | 64
-     --
-     32
-   */
-
-  int x0, x1, y0, y1;
-  int i, j, k, n0;
-  unsigned int number;
-  unsigned int mask[10] = {126, 66, 55, 103, 75, 109, 125, 70, 127, 79};
-  int num[10];
-  int temp;
-  int size = FONTSIZE;
-
-  for (k = 0; k < 10; k++) {
-    n0 = n % 10;
-    num[k] = n0;
-    n = (int)n / 10;
-    if (n <= 0)
-      break;
-  } /* for */
-  /* flip */
-  k++;
-  for (i = 0; i < k / 2; i++) {
-    temp = num[i];
-    num[i] = num[k - 1 - i];
-    num[k - 1 - i] = temp;
-  }
-
-  x0 = x1 = y0 = y1 = 0;
-
-  for (j = 0; j < k; j++) {
-    number = mask[num[j]];
-    for (i = 0; i <= 6; i++) {
-      if (number & 1) {
-        switch (i) {
-        case 0:
-          x0 = 1;
-          y0 = size + 2;
-          x1 = x0 + size;
-          y1 = size + 2;
-          break;
-        case 1:
-          x0 = size + 2;
-          y0 = 1;
-          x1 = size + 2;
-          y1 = y0 + size;
-          break;
-        case 2:
-          x0 = 1;
-          y0 = 0;
-          x1 = x0 + size;
-          y1 = 0;
-          break;
-        case 3:
-          x0 = 0;
-          y0 = 1;
-          x1 = 0;
-          y1 = y0 + size;
-          break;
-        case 4:
-          x0 = 0;
-          y0 = size + 3;
-          x1 = 0;
-          y1 = y0 + size;
-          break;
-        case 5:
-          x0 = 1;
-          y0 = 2 * (size + 1) + 2;
-          x1 = x0 + size;
-          y1 = 2 * (size + 1) + 2;
-          break;
-        case 6:
-          x0 = size + 2;
-          y0 = size + 3;
-          x1 = size + 2;
-          y1 = y0 + size;
-          break;
-        default:
-          printf("error en led\n");
-          exit(EXIT_FAILURE);
-        }
-        DrawLine(screen, x + x0 + j * (6 + size), y + y0,
-                 x + x1 + j * (6 + size), y + y1, color);
-      }
-      number >>= 1;
-    }
-  } /* for j */
-  return (k);
-} /* --led */
 
 void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
   /*
@@ -2642,26 +1766,10 @@ void GenMiniColorTable(SDL_Surface *screen, Uint32 *ct, int n, SDL_Color color1,
 }
 
 void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
-  /*
-    write bitmap to a file
-    to the file name is concatenated a number that increase each time
-  */
   static int save_cont = 0;
-  char num_file[5] = "";
   char name[MAX_WORD_LEN] = "";
-  char number[5] = "";
 
-  strncpy(name, fpname, MAX_WORD_LEN);
-  if (save_cont < 10)
-    strcat(number, "0");
-  if (save_cont < 100)
-    strcat(number, "0");
-  if (save_cont < 1000)
-    strcat(number, "0");
-  snprintf(num_file, 5, "%d", save_cont);
-  strcat(number, num_file);
-  strcat(name, number);
-  strcat(name, ".bmp");
+  snprintf(name, MAX_WORD_LEN, "%s%04d.bmp", fpname, save_cont);
 
   if (SDL_SaveBMP(bitmap, name) == -1) {
     fprintf(stderr, "Error saving bitmap\n");
@@ -2747,10 +1855,6 @@ void InfoColors(struct RGBColor *rgbcolortable) {
            rgbcolortable[i].name);
   }
 }
-
-/*****************************************************************************
- * Main app functions (from punto.c)
- *****************************************************************************/
 
 int ParseEvent(SDL_Event *event) {
   int status;
@@ -3115,98 +2219,92 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
 }
 
 void Usage(char *ver, char *l_rev) {
-  (void)fprintf(stdout, "Usage is: punto [-options] file \n");
-  (void)fprintf(stdout, "possible options: h [s,size] n [g,geom,geometry] d "
+  printf("Usage is: punto [-options] file \n");
+  printf("possible options: h [s,size] n [g,geom,geometry] d "
                         "[r,radio] [c,color] w G p B D t z V bg fg lc F T\n");
-  (void)fprintf(stdout, "Where file is an (x,[r,c]), (x,y,[r,c,fx,fy]) or a "
+  printf("Where file is an (x,[r,c]), (x,y,[r,c,fx,fy]) or a "
                         "(x,y,z,[r,c,fx,fy,fz]) file.\n");
-  (void)fprintf(stdout, "\tr is the radio of the puntos.\n");
-  (void)fprintf(stdout, "\tc is the color of the puntos.\n");
-  (void)fprintf(stdout, "\tfx fy fz are the field values.\n");
-  (void)fprintf(stdout, "Additional columns are discarded. You can choose the "
+  printf("\tr is the radio of the puntos.\n");
+  printf("\tc is the color of the puntos.\n");
+  printf("\tfx fy fz are the field values.\n");
+  printf("Additional columns are discarded. You can choose the "
                         "columns to plot with the -z option.\n");
-  (void)fprintf(
-      stdout, "Each frame must be separated for a blank or a comment line.\n");
-  (void)fprintf(stdout, "The comment lines must begin with a #.\n");
-  (void)fprintf(stdout, "\nOptions:\n-h \t this help.\n");
-  (void)fprintf(stdout, "-s N\t where N is max. size in pixels of puntos (an "
+  printf("Each frame must be separated for a blank or a comment line.\n");
+  printf("The comment lines must begin with a #.\n");
+  printf("\nOptions:\n-h \t this help.\n");
+  printf("-s N\t where N is max. size in pixels of puntos (an "
                         "integer number) (default: 15).\n");
-  (void)fprintf(
-      stdout,
-      "-n N1:N2\twhere N1 and N2 are integers starting from 0.\n\t\tOnly the "
+  printf("-n N1:N2\twhere N1 and N2 are integers starting from 0.\n\t\tOnly the "
       "puntos with labels between these numbers are plotted.\n");
-  (void)fprintf(stdout, "-g XRESOxYRESO\twidth and height of the window.\n");
-  (void)fprintf(
-      stdout,
-      "-d cs\twhere cs is the delay time between frames in centiseconds.\n");
-  (void)fprintf(stdout, "-r [min:max]\tthere is a column of radius.\n");
-  (void)fprintf(stdout, "\t rescale between min and max values.\n");
-  (void)fprintf(stdout, "-c \tthere is a column of colors.\n");
-  (void)fprintf(stdout, "-e \"fname\" save pixmap and exit.\n");
-  (void)fprintf(stdout, "-w Obsolote. as -G.\n");
-  (void)fprintf(stdout, "-G [min:max] \tThe colors are a gradient scale. \n");
-  (void)fprintf(stdout, "-p num \twhere num is the gradient palette. \n");
-  (void)fprintf(stdout,
+  printf("-g XRESOxYRESO\twidth and height of the window.\n");
+  printf("-d cs\twhere cs is the delay time between frames in centiseconds.\n");
+  printf("-r [min:max]\tthere is a column of radius.\n");
+  printf("\t rescale between min and max values.\n");
+  printf("-c \tthere is a column of colors.\n");
+  printf("-e \"fname\" save pixmap and exit.\n");
+  printf("-w Obsolote. as -G.\n");
+  printf("-G [min:max] \tThe colors are a gradient scale. \n");
+  printf("-p num \twhere num is the gradient palette. \n");
+  printf(
                 " \t 0 spectrum (default), 1 red, 2 green, 3 blue, 4 grey.\n");
-  (void)fprintf(stdout, "-B [x0:y0:z0:x1:y1:z1]\tplot a border box.\n");
-  (void)fprintf(stdout, "-D N\tthe dimension of the data is set to N.\n");
-  (void)fprintf(stdout, "-t 0,1,2\ttype of the bitmap displayed.\n");
-  (void)fprintf(stdout,
+  printf("-B [x0:y0:z0:x1:y1:z1]\tplot a border box.\n");
+  printf("-D N\tthe dimension of the data is set to N.\n");
+  printf("-t 0,1,2\ttype of the bitmap displayed.\n");
+  printf(
                 " \t 0 display circles, 1 squares, 2 spheres (default).\n");
-  (void)fprintf(stdout,
+  printf(
                 "-z a:b:c:d:e.\tyou can indicate the columns to be plotted.\n");
-  (void)fprintf(stdout,
+  printf(
                 " \t the x,y,z columns then the radio,color and field ones.\n");
-  (void)fprintf(stdout,
+  printf(
                 "-trace [n]\ttrace mode on. n: number of trace dots.\n");
-  (void)fprintf(stdout, "-V \tA vectorial field is plotted with arrows.\n");
-  (void)fprintf(stdout,
+  printf("-V \tA vectorial field is plotted with arrows.\n");
+  printf(
                 "-bg color\tset the background color. (Default black).\n");
-  (void)fprintf(stdout,
+  printf(
                 "-fg color\tset the foreground color. (Default blue).\n");
-  (void)fprintf(stdout,
+  printf(
                 "-lc color\tset the led and box color. (Default green).\n");
-  (void)fprintf(stdout, "-F \"fname\" \tset the default root filename for the "
+  printf("-F \"fname\" \tset the default root filename for the "
                         "saved pixmaps.\n \t\t(default #temp_).\n");
-  (void)fprintf(stdout, "-T \"name\" \tset the title of the window, (default: "
+  printf("-T \"name\" \tset the title of the window, (default: "
                         "the name of the data file).\n");
 
-  (void)fprintf(
-      stdout, "\nKeyboard controls:\n0\treset positions.\n4,7 \trotate the "
+  printf("\nKeyboard controls:\n0\treset positions.\n4,7 \trotate the "
               "X-axis.\n5,8 \trotate the Y-axis.\n6,9 \trotate the Z-axis.\n");
 
-  (void)fprintf(stdout, "z,Z\tzoom-in zoom-out.\n");
-  (void)fprintf(stdout, "i,I\tincrease-decrease the size of puntos. (option -r "
+  printf("z,Z\tzoom-in zoom-out.\n");
+  printf("i,I\tincrease-decrease the size of puntos. (option -r "
                         "must be activated.)\n");
-  (void)fprintf(stdout, "left,right arrow\tmove left-right.\n");
-  (void)fprintf(stdout, "up,down arrow\t\tmove up-down.\n");
-  (void)fprintf(stdout, "Keeping pressed the SHIFT or the < key the movement "
+  printf("left,right arrow\tmove left-right.\n");
+  printf("up,down arrow\t\tmove up-down.\n");
+  printf("Keeping pressed the SHIFT or the < key the movement "
                         "is faster or slower.\n");
-  (void)fprintf(stdout, "r\treverse animation.\n");
-  (void)fprintf(stdout, "f\tfast mode. Don't show graphics.\n");
-  (void)fprintf(stdout,
+  printf("r\treverse animation.\n");
+  printf("f\tfast mode. Don't show graphics.\n");
+  printf(
                 "a\tin vector mode changes among points, lines and arrows.\n");
-  (void)fprintf(stdout, "u\tfixed radio on off.\n");
-  (void)fprintf(stdout, "\t\tin vector mode normalized to unit.\n");
-  (void)fprintf(stdout, "t\ttrace mode on off.\n");
-  (void)fprintf(stdout, "p\tshow periodic images.\n");
-  (void)fprintf(stdout, "S\tSave mode on off. All the images are saved.\n");
-  (void)fprintf(stdout, "F\tSave only the current image.\n");
+  printf("u\tfixed radio on off.\n");
+  printf("\t\tin vector mode normalized to unit.\n");
+  printf("t\ttrace mode on off.\n");
+  printf("p\tshow periodic images.\n");
+  printf("S\tSave mode on off. All the images are saved.\n");
+  printf("F\tSave only the current image.\n");
 
-  (void)fprintf(stdout, "+(plus)\t\tincrease delay between frames.\n");
-  (void)fprintf(stdout, "-(minus)\tdecrease delay between frames.\n");
-  (void)fprintf(stdout, ".(period)\tsets delay time to the initial value.\n");
-  (void)fprintf(stdout, "s   \tstops, starts animation.\n");
-  (void)fprintf(stdout, "space   step by step animation.\n");
-  (void)fprintf(stdout, "b\tborder box on off.\n");
-  (void)fprintf(stdout, "c\tcomment line on-off.\n");
-  (void)fprintf(stdout, "q   \tquit punto.\n");
-  (void)fprintf(stdout, "To see all available colors, type punto -h color.\n");
+  printf("+(plus)\t\tincrease delay between frames.\n");
+  printf("-(minus)\tdecrease delay between frames.\n");
+  printf(".(period)\tsets delay time to the initial value.\n");
+  printf("s   \tstops, starts animation.\n");
+  printf("space   step by step animation.\n");
+  printf("b\tborder box on off.\n");
+  printf("c\tcomment line on-off.\n");
+  printf("q   \tquit punto.\n");
+  printf("To see all available colors, type punto -h color.\n");
 
-  (void)fprintf(stdout, "\nCopyleft mrevenga 1998-2009 ");
-  (void)fprintf(stdout, "%s", ver);
-  (void)fprintf(stdout, "\nlast revision %s\n", l_rev);
-  (void)fprintf(stdout, "Please, send bugs and suggestions to: mrevenga at "
+  printf("\nCopyleft mrevenga 1998-2009 ");
+  printf("%s", ver);
+  printf("\nlast revision %s\n", l_rev);
+  printf("Please, send bugs and suggestions to: mrevenga at "
                         "users.sourceforge.net\n");
 
 } /* -- funcion Usage */
@@ -3339,13 +2437,13 @@ int main(int argc, char *argv[]) {
 
   max_N = N + 1000;
 
-  if ((punto = (struct Punto *)calloc((size_t)max_N, sizeof(struct Punto))) ==
+  if ((punto = calloc((size_t)max_N, sizeof(struct Punto))) ==
       NULL) {
     perror("calloc");
     exit(EXIT_FAILURE);
   }
 
-  if ((tabla = (long *)calloc((size_t)max_N, sizeof(long))) == NULL) {
+  if ((tabla = calloc((size_t)max_N, sizeof(long))) == NULL) {
     perror("calloc");
     exit(EXIT_FAILURE);
   }
@@ -3357,7 +2455,7 @@ int main(int argc, char *argv[]) {
     tabla[i] = i;
 
   dfile.nblocks = 0;
-  if ((block = (struct Block *)calloc((size_t)1, sizeof(struct Block))) ==
+  if ((block = calloc((size_t)1, sizeof(struct Block))) ==
       NULL) {
     perror("calloc");
     exit(EXIT_FAILURE);
@@ -3368,7 +2466,6 @@ int main(int argc, char *argv[]) {
 
   broot = CreateBlock();
   broot->pos = 0;
-  broot->len = 0;
   broot->next = 0;
   broot->prev = 0;
 
@@ -3410,7 +2507,7 @@ int main(int argc, char *argv[]) {
     printf("Cv: %f %f %f\n", universe.cv.x, universe.cv.y, universe.cv.z);
   }
   numsprites = (max_nsize + 1) * MAX_NSCOLORS;
-  if ((bola = (struct Sprite *)malloc((size_t)(numsprites) *
+  if ((bola = malloc((size_t)(numsprites) *
                                       sizeof(struct Sprite))) == NULL) {
     perror("malloc");
     exit(EXIT_FAILURE);
@@ -3587,7 +2684,7 @@ int main(int argc, char *argv[]) {
 
   for (i = 0; i < ntrace; i++) {
     if ((traceball[i] =
-             (struct Punto *)calloc((size_t)1, sizeof(struct Punto))) == NULL) {
+             calloc((size_t)1, sizeof(struct Punto))) == NULL) {
       perror("realloc");
       exit(EXIT_FAILURE);
     }
@@ -4276,7 +3373,7 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
     if (option.verbose > 0)
       printf("FREEING MEM (trace points)\n");
     for (i = 0; i < ntrace; i++) {
-      if ((traceball[i] = (struct Punto *)realloc(
+      if ((traceball[i] = realloc(
                traceball[i], (size_t)trace_num * sizeof(struct Punto))) ==
           NULL) {
         perror("realloc");
@@ -4323,7 +3420,7 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
     if (option.verbose > 1)
       printf("REALLOCATING\n");
     for (i = 0; i < ntrace; i++) {
-      if ((traceball[i] = (struct Punto *)realloc(
+      if ((traceball[i] = realloc(
                traceball[i], (size_t)numactivados * sizeof(struct Punto))) ==
           NULL) {
         perror("realloc");
@@ -4401,7 +3498,7 @@ int DrawPeriodicPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
   c = u.cm;
   if (numactivados > p0_size) {
     free(p0);
-    if ((p0 = (struct Punto *)malloc((size_t)numactivados *
+    if ((p0 = malloc((size_t)numactivados *
                                      sizeof(struct Punto))) == NULL) {
       perror("malloc");
       exit(EXIT_FAILURE);
@@ -4741,7 +3838,7 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
     }
   }
 
-  if ((temp = (double *)malloc((size_t)(df.ncol + 1) * sizeof(double))) ==
+  if ((temp = malloc((size_t)(df.ncol + 1) * sizeof(double))) ==
       NULL) {
     perror("malloc");
     exit(EXIT_FAILURE);
@@ -4811,7 +3908,7 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
       i++;
       if (i >= (size_t)max_N) {
         /* reallocating memory if it is necesary */
-        if ((p = (struct Punto *)realloc(
+        if ((p = realloc(
                  p, (size_t)(i + 1024) * sizeof(struct Punto))) == NULL) {
           perror("realloc");
           exit(EXIT_FAILURE);
@@ -4823,7 +3920,7 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
   } while (typeline == DATA && kEOF == FALSE);
 
   if (reallocpunto) {
-    if ((tabla = (long *)realloc(tabla, (size_t)(max_N + 1) * sizeof(long))) ==
+    if ((tabla = realloc(tabla, (size_t)(max_N + 1) * sizeof(long))) ==
         NULL) {
       perror("realloc");
       exit(EXIT_FAILURE);
