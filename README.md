@@ -96,6 +96,14 @@ Additional columns: y, z, radius, color, vector components.
 Blocks are separated by blank or comment lines. Comment lines start
 with `#`. Multiple blocks produce an animation.
 
+## Hacking
+
+Single file `src/punto.c`. Draws on an offscreen `SDL_Surface`,
+uploads to `SDL_Texture` each frame. Sprites are cached in `bola[]`
+indexed by `coloridx + MAX_NSCOLORS * sizeidx`. `fonts-1.xpm` and
+`rgb.h` are data files included at compile time. `gen.c` is
+standalone (no SDL).
+
 ## License
 
 GNU General Public License v2. See COPYING.

@@ -28,20 +28,20 @@
 #define MAX_LINE_LEN 4096
 #define MAX_WORD_LEN 128
 
-#define LEDW 50 /* width & height of the led zone */
+#define LEDW 50
 #define LEDH 50
 
-#define MAXNFILES 9999 /* max number of files to save */
+#define MAXNFILES 9999
 
 #define WIDTH 640
-#define HEIGHT 480 /* dimensions of the window */
+#define HEIGHT 480
 
-#define MAX_NSIZE 64           /* num. of diferent sizes  */
-#define MAX_NCOLORS 752        /*  464 number of names for colors  */
-#define MAX_NSCOLORS 64        /* number of colors 3D */
+#define MAX_NSIZE 64
+#define MAX_NCOLORS 752
+#define MAX_NSCOLORS 64
 
 #define TRACE_DEFAULT 50
-#define TRACE_MAX 500 /* max number of trace points */
+#define TRACE_MAX 500
 
 #define SPECTRUM 0
 #define RED 1
@@ -67,13 +67,13 @@ struct Point {
 };
 
 struct Rectangle {
-  int x, y; /* upper left corner */
-  int l, h; /* lenght and hight */
+  int x, y;
+  int l, h;
 };
 
 struct Vector {
-  double x0, y0, z0; /* origin */
-  double x1, y1, z1; /* final  */
+  double x0, y0, z0;
+  double x1, y1, z1;
 };
 
 struct Punto {
@@ -100,12 +100,12 @@ struct PosCol {
 };
 
 struct DataFile {
-  FILE *fp;                /* file descriptor. */
-  char name[MAX_WORD_LEN]; /* name of the file */
-  int nblocks;             /* numbre of blocks */
-  int ncol;                /* number of columns; */
-  long size;               /* size of the  file */
-  int eof;                 /* its reached the end of file? */
+  FILE *fp;
+  char name[MAX_WORD_LEN];
+  int nblocks;
+  int ncol;
+  long size;
+  int eof;
 };
 
 struct RGBColor {
@@ -117,9 +117,9 @@ struct Block {
   long pos;
   long num;
 
-  char *comment;      /* pointer to the comment of the block */
-  struct Block *next; /* address of the next block */
-  struct Block *prev; /* address of the previous block */
+  char *comment;
+  struct Block *next;
+  struct Block *prev;
 };
 
 struct Values {
@@ -132,35 +132,35 @@ struct Values {
 };
 
 struct Keys {
-  short z;                     /* zoom */
-  short i;                     /* increase decrease size. */
-  short q;                     /* quit */
-  short b;                     /* border */
-  short c;                     /* comments on off */
-  short f;                     /* fast */
-  short s;                     /* start stop */
-  short S;                     /* save mode on off */
-  short r;                     /* reverse animation */
-  short F;                     /* save image */
-  short n;                     /* navigation mode */
-  short u;                     /* normalized to unit on off. */
-  short t;                     /* trace on off */
-  short p;                     /* periodic boundaries on off */
-  short plus;                  /* increase delay */
-  short minus;                 /* decrease delay */
-  short period;                /* set delay to initial value. */
-  short arrow;                 /* arrow type */
-  short up, down, left, right; /* move */
+  short z;
+  short i;
+  short q;
+  short b;
+  short c;
+  short f;
+  short s;
+  short S;
+  short r;
+  short F;
+  short n;
+  short u;
+  short t;
+  short p;
+  short plus;
+  short minus;
+  short period;
+  short arrow;
+  short up, down, left, right;
   short pageup, pagedown;
-  short shift;                             /* fast move */
-  short less;                              /* slow move */
-  short space;                             /* one by one step animation */
-  short k_4, k_5, k_6, k_7, k_8, k_9, k_0; /* rotate */
+  short shift;
+  short less;
+  short space;
+  short k_4, k_5, k_6, k_7, k_8, k_9, k_0;
   short pressed;
   short mclick;
-  short mbdown; /* mouse buttom down */
-  short mbup;   /* mouse buttom up */
-  short user;   /* user signal */
+  short mbdown;
+  short mbup;
+  short user;
 };
 
 struct Window {
@@ -168,20 +168,20 @@ struct Window {
   SDL_Renderer *renderer;
   SDL_Texture *texture;
   SDL_Surface *screen;
-  int w, h; /* width, height */
+  int w, h;
   Uint32 flags;
   struct Point shift;
 };
 
 struct Universe {
-  struct Point ang;        /* polar coordenates, angles */
-  float zoom;              /* zoom */
-  float zoom_size;         /* zoom */
-  struct Point dshift;     /* default shift of data */
+  struct Point ang;
+  float zoom;
+  float zoom_size;
+  struct Point dshift;
   struct Point cm, cw, cv; /* centro geometrico datos, centro de la ventana,
                               centro visualizacion */
   struct Point escale;
-  int psize; /* default size for puntos */
+  int psize;
 };
 
 struct Options {
@@ -350,18 +350,18 @@ int ntrace = TRACE_DEFAULT;
 
 struct Options option;
 
-struct Punto box[8]; /* coordinates of the box */
+struct Punto box[8];
 
-int max_nsize; /* max. number of diferent sizes (for sprites) */
+int max_nsize;
 
 long numactivados;
-long N;     /* number of particles of one block */
-long max_N; /*  max. number of puntos along all the file */
+long N;
+long max_N;
 
-int nextblock = 0; /* next block to read */
+int nextblock = 0;
 
 struct Block *block;
-struct Punto *punto; /*  original data (file data) */
+struct Punto *punto;
 long *tabla;
 int reset_box = TRUE;
 
@@ -400,15 +400,6 @@ void GetFileName(int argc, char *argv[], char *fname) {
 }
 
 int NumRet(FILE *fp) {
-  /* end of block ?
-     returns the number of ret's between two data lines.
-     ignore all the lines that begins with # and % or a letter.
-     point the file to the next valid data.
-     returns:
-     if the file reachs EOF returns -1 else
-     the number of \n
-   */
-
   int ret = 0;
   char s;
   long file_pos;
@@ -436,7 +427,6 @@ int NumRet(FILE *fp) {
         file_pos = ftell(fp) - 1;
         break;
       }
-      /* if a comment line exits goto the next one */
       if (s == '#' || s == '%' || (s > 'a' && s < 'z') ||
           (s > 'A' && s < 'Z')) {
         for (;;) {
@@ -451,27 +441,21 @@ int NumRet(FILE *fp) {
           }
           if (s == '\n') {
             ret++;
-            file_pos = ftell(fp); /* new position of the file */
+            file_pos = ftell(fp);
             break;
           }
         }
       }
     }
-  } /* for */
+  }
 
   fseek(fp, file_pos, SEEK_SET);
   if (eof)
     return (-1);
   return (ret);
-} /* --function NumRet */
+}
 
 long CountLines(char *fname) {
-  /*
-     v 0.2
-     returns the number of data lines of the first data block.
-     doesnt count comment or empty lines.
-     return the number of puntos (particles).
-   */
   FILE *fp;
   char s;
   int nlines, nchar, comment;
@@ -481,7 +465,6 @@ long CountLines(char *fname) {
     perror(fname);
     exit(EXIT_FAILURE);
   }
-  /* go to the first data line */
   (void)NumRet(fp);
 
   nlines = 0;
@@ -491,16 +474,16 @@ long CountLines(char *fname) {
   do {
     if (fscanf(fp, "%c", &s) != EOF) {
       switch (s) {
-      case '\n': /* end of line */
+      case '\n':
         if (nchar == 0)
-          endblock++; /* end of block? */
+          endblock++;
         else {
           nlines++;
         }
         comment = 0;
         nchar = 0;
         break;
-      case '#': /* comment line */
+      case '#':
         comment++;
         nchar = 0;
         break;
@@ -524,10 +507,6 @@ long CountLines(char *fname) {
 }
 
 int NColumns(char *fname)
-/* function NColums
-   returns:
-   the number of rows of the data file.
- */
 {
   FILE *fp;
   struct stat info;
@@ -538,13 +517,11 @@ int NColumns(char *fname)
   int cont = 0;
   int sw = 0;
 
-  /* exit if the file doesn't exist */
 
   if ((fd = open(fname, O_RDONLY)) == -1) {
     perror(fname);
     exit(EXIT_FAILURE);
   }
-  /* wait until the file size is nonzero    */
   do {
     info.st_size = 0;
     if (fstat(fd, &info) == -1) {
@@ -569,7 +546,6 @@ int NColumns(char *fname)
     exit(EXIT_FAILURE);
   }
 
-  /* goto the first data line */
   NumRet(fp);
   do {
     c = fscanf(fp, "%c", &s);
@@ -589,11 +565,6 @@ int NColumns(char *fname)
 }
 
 int FindChain(char *target, char *cad[], int n) {
-  /* find the word target in the string array cad
-     return:
-     the position of tarjet in cad
-     -1 if is not found.
-   */
   int i;
 
   for (i = 0; i < n; i++) {
@@ -627,15 +598,6 @@ long SizeFile(char *filename) {
 }
 
 int ReadNBlocks(char *fname, struct Block *br, long fpos) {
-  /*
-     version 0.1
-     Read the file fname completely
-     looking for blocks of data
-     Create a linked list of struct Block starting in *br.
-     return:
-     the number of blocks of the file.
-   */
-
   FILE *fp;
 
   char line[MAX_LINE_LEN];
@@ -686,7 +648,7 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
       file_pos0 = file_pos - nrbytes;
       fcont++;
     }
-    if (nrbytes < 0) { /* fin de archivo */
+    if (nrbytes < 0) {
       infile = -1;
     }
 
@@ -699,12 +661,11 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
 
     if (inblock == 0) {
       if (type == COMMENT || type == DATA) {
-        /* comienza un bloque */
         inblock = 1;
-        if (infile == 0) { /* first block */
+        if (infile == 0) {
           infile = 1;
           lastb->pos = file_pos;
-        } else { /* siguientes bloques */
+        } else {
           numblock++;
           lastb->next = CreateBlock();
           lastb->next->prev = lastb;
@@ -722,7 +683,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
       if (indata && type != DATA)
         sw = 1;
       if (sw) {
-        /* fin de bloque */
         inblock = 0;
         indata = 0;
         lastb->num = cont;
@@ -735,9 +695,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
 }
 
 struct Block *CreateBlock(void) {
-  /* Create a new Block
-
-   */
   struct Block *bloque;
 
   if ((bloque = malloc(sizeof(struct Block))) == NULL) {
@@ -756,24 +713,12 @@ struct Block *CreateBlock(void) {
 
 void TCR(float a, float b, float c, long n1, long n2, struct Point r,
          float comp, short field, int *reset_box, struct Punto *p) {
-  /*
-     rotate, traslate and scale all puntos in *p writing the result in *p1.
-     a,b,c are the angles of rotation,
-     n1,n2 the range number of puntos.
-     p the puntos to rotate
-     r the translation vector.
-     comp is the scale factor.
-     reset_box to initialize variables
-     field if we are rotating a vectorial field
-   */
-
   long i, j, k;
   static float A0[3][3];
   float A1[3][3];
   float temp[3];
   float cosa, sina, cosb, sinb, cosc, sinc;
 
-  /* initialitation */
 
   if (*reset_box == TRUE) {
     *reset_box = FALSE;
@@ -819,7 +764,6 @@ void TCR(float a, float b, float c, long n1, long n2, struct Point r,
   A1[2][1] = -cosa * sinb * sinc - sina * cosc;
   A1[2][2] = cosa * cosb;
 
-  /* matrix mult  A0=A1*A0 */
   for (i = 0; i < 3; i++) {
     for (j = 0; j < 3; j++) {
       temp[j] = 0.0;
@@ -830,14 +774,12 @@ void TCR(float a, float b, float c, long n1, long n2, struct Point r,
       A0[k][i] = temp[k];
   }
 
-  /* reescaling A1=A0*comp */
   for (i = 0; i < 3; i++) {
     for (j = 0; j < 3; j++) {
       A1[i][j] = A0[i][j] * comp;
     }
   }
 
-  /* rotation  + traslation */
 
   for (i = n1; i < n2; i++) {
     p[i].x1 = (A1[0][0] * (p[i].x - r.x) + A1[0][1] * (p[i].y - r.y) +
@@ -850,7 +792,6 @@ void TCR(float a, float b, float c, long n1, long n2, struct Point r,
 
   if (field == TRUE) {
 
-    /* rotation */
     for (i = n1; i < n2; i++) {
       p[i].vx1 = ((A1[0][0] * (p[i].vx) + A1[0][1] * (p[i].vy) +
                    A1[0][2] * (p[i].vz))) /
@@ -863,13 +804,9 @@ void TCR(float a, float b, float c, long n1, long n2, struct Point r,
                  comp;
     }
   }
-} /* -- funcion TCR3 */
+}
 
 void Rapida(long *a, int izq, int drch, struct Punto *p)
-/* function Rapida:
-   sort puntos from low to high in z axis value,
-   the ordered indexes are returned in the vector a
- */
 {
   long i, j, k;
   double z;
@@ -900,14 +837,9 @@ void Rapida(long *a, int izq, int drch, struct Punto *p)
 }
 
 void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
-/*
- * Set the pixel at (x, y) to the given value
- * NOTE: The surface must be locked before calling this!
- */
 {
   Uint8 bpp = surface->format->BytesPerPixel;
 
-  /* Here p is the address to the pixel we want to set */
   Uint8 *p;
 
   if (x < 0)
@@ -950,11 +882,6 @@ void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 
 void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
               Uint32 color) {
-  /*
-     Draw a line that starts at x0,y0 and ends at x1,y1
-     of color color
-   */
-
   int t, distancia;
   int xerr = 0, yerr = 0, d_x, d_y;
   int incx, incy;
@@ -1001,9 +928,6 @@ void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
 
 void PutPixelCircle(SDL_Surface *screen, int x, int y, int x0, int y0,
                     double razon, Uint32 color) {
-  /*
-
-   */
   int startx, endx, x1, starty, endy, y1;
 
   starty = (int)(y * razon);
@@ -1027,9 +951,6 @@ void PutPixelCircle(SDL_Surface *screen, int x, int y, int x0, int y0,
 }
 
 void DrawCircle(SDL_Surface *screen, int x0, int y0, int r, Uint32 color) {
-  /*
-     Draw a circle
-   */
   int x, y, delta;
   float razon;
 
@@ -1055,10 +976,6 @@ void DrawCircle(SDL_Surface *screen, int x0, int y0, int r, Uint32 color) {
 
 void FillRing(SDL_Surface *surface, int x0, int y0, int r, int h,
               Uint32 color) {
-  /*
-     Draw a ring of center x0,y0 and radius r,h
-     with color color
-   */
   int x, y;
   int r2;
   int y1;
@@ -1088,11 +1005,6 @@ void FillRing(SDL_Surface *surface, int x0, int y0, int r, int h,
 }
 
 void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color) {
-  /*
-     Fill a circlering of center x0,y0 and radio r
-     with color color
-   */
-
   int x, y;
   float r2;
 
@@ -1111,12 +1023,6 @@ void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color) {
 
 SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
                         int radio) {
-  /*
-     Create  a circle bitmap
-     of radio radio
-     of color color and
-     border color bcolor
-   */
   SDL_Surface *temp;
   Uint32 background;
 
@@ -1136,12 +1042,6 @@ SDL_Surface *CreateBall(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
 }
 
 SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
-  /*
-     Create a 3D sphere bitmap
-     of radio radio
-     of color color
-   */
-
   SDL_Surface *temp;
   SDL_Surface *sprite;
   Uint32 background;
@@ -1199,9 +1099,6 @@ SDL_Surface *CreateBall3D(SDL_Surface *screen, Uint32 color, int radio) {
 
 void DrawRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
                    Uint32 color) {
-  /*
-     Draw a rectangle
-   */
   DrawLine(surface, x0, y0, x1, y0, color);
   DrawLine(surface, x0, y0, x0, y1, color);
   DrawLine(surface, x0, y1, x1, y1, color);
@@ -1210,9 +1107,6 @@ void DrawRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
 
 void FillRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
                    Uint32 color) {
-  /*
-     fill a rectangle with color color
-   */
   int y;
 
   for (y = y0; y <= y1; y++) {
@@ -1222,9 +1116,6 @@ void FillRectangle(SDL_Surface *surface, int x0, int y0, int x1, int y1,
 
 SDL_Surface *CreateRectangle(SDL_Surface *screen, Uint32 color, Uint32 bcolor,
                              int radio) {
-  /*
-     Create a rectangle bitmap
-  */
   SDL_Surface *temp;
   Uint32 background;
 
@@ -1394,9 +1285,6 @@ int DrawChar(SDL_Surface *screen, char **text, int x, int y, Uint32 color) {
 }
 
 int Sqrt(int n) {
-  /*
-    A sqrt() table of the firts 10000 integer numbers
-  */
   static int sq[10000];
   static int cont = 0;
 
@@ -1419,9 +1307,6 @@ int Sqrt(int n) {
 }
 
 int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
-  /* look for a color name name into the table table returning
-     the rgb values in color
-   */
   int i;
   int status = -1;
 
@@ -1438,10 +1323,6 @@ int LookUpColor(char *name, struct RGBColor *table, SDL_Color *color) {
 }
 
 void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
-  /*
-     Reads n rgb names and rgb values from the file fname
-     writes the result in the struct color
-   */
   FILE *fp;
   int i;
   int r, g, b;
@@ -1475,17 +1356,6 @@ void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
 
 void DrawArrow(SDL_Surface *screen, SDL_Rect pos, struct Point f, float factor,
                Uint32 color, int type) {
-  /*
-     draw an arrow in the position pos
-     with size f and reescale by the factor factor
-     with the color color and
-     the type type.
-     types can be:
-     0: a point
-     1: a line
-     2: an arrow
-   */
-
   float sin_O1, cos_O1;
   float vx, vy;
   float r, x, y, x1, y1, x2, y2, x3, y3;
@@ -1541,10 +1411,6 @@ void DrawArrow(SDL_Surface *screen, SDL_Rect pos, struct Point f, float factor,
 
 void DrawFile(SDL_Surface *screen, Uint32 color, Uint32 border,
               struct Rectangle rec, struct DataFile df) {
-  /*
-     draw a status bar of an open file *fp
-     in the position given by rec with color color
-   */
   int i, len;
   long files, filep;
 
@@ -1558,16 +1424,10 @@ void DrawFile(SDL_Surface *screen, Uint32 color, Uint32 border,
     DrawLine(screen, rec.x + 1, rec.y + i, rec.x + len, rec.y + i, color);
   }
 
-} /* DrawFile */
+}
 
 void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 bordercolor,
                struct Values val, int x, int y) {
-  /*
-     draw a cale bar
-     in the position given by x,y
-     with color color
-     with border of color bordercolor.
-   */
   int i, j;
   int x0, y0, x1, y1;
   int w, h;
@@ -1615,18 +1475,9 @@ void DrawScale(SDL_Surface *screen, Uint32 *color, Uint32 bordercolor,
     DrawLine(screen, x, y + j + 1, x + w, y + j + 1, color[i]);
   }
 
-} /* --DrawScale */
+}
 
 void GenColorTable(SDL_Surface *screen, Uint32 *colortable, int type) {
-  /*
-     Generates a color table of type type
-     type can be:
-     RED:
-     GREEN:
-     BLUE:
-     GREY:
-     SPECTRUM:
-   */
   SDL_Color color1, color2;
 
   color1.a = 0;
@@ -1748,7 +1599,6 @@ void GenColorTable(SDL_Surface *screen, Uint32 *colortable, int type) {
 
 void GenMiniColorTable(SDL_Surface *screen, Uint32 *ct, int n, SDL_Color color1,
                        SDL_Color color2) {
-  /* gen a gradient colortable of n elements between color1 and color2 */
   int i;
   float ir, ig, ib;
   Uint8 r, g, b;
@@ -1785,11 +1635,6 @@ void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
 
 void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
              float z, Uint32 color) {
-  /*
-     Draw a border box
-
-   */
-
   struct Punto p[8];
   int i, j, k;
   int m, n;
@@ -1842,7 +1687,7 @@ void DrawBox(struct Window w, struct Punto *box, int dim, struct Point c_v,
   DrawLine(w.screen, (int)(width * .5), (int)(height * .5 - 5),
            (int)(width * .5), (int)(height * .5 + 5), color);
 
-} /*        --DrawBox  */
+}
 
 void InfoColors(struct RGBColor *rgbcolortable) {
   int i;
@@ -1883,10 +1728,6 @@ int CheckEvent(SDL_Event *event) {
   int status;
 
   status = FALSE;
-  /*
-   * Looking for an interesting event
-   */
-
   while (SDL_PollEvent(event) > 0 && status == FALSE) {
     status = ParseEvent(event);
   }
@@ -1895,29 +1736,15 @@ int CheckEvent(SDL_Event *event) {
 }
 
 int NextEvent(SDL_Event *event) {
-
-  /*
-   *      NextEvent() incorpora algunas funciones de manejo de eventos.
-   *      Primero bloquea el programa hasta la llegada de un evento X,
-   *      llamando a SDL_WaitEvent().  Luego, NetxEvent() llama a ParseEvent(),
-   *      quien o filtra el evento o le deja pasar.
-   *
-   */
-
-  /* -- funcion NextEvent */
   int status;
-
-  /*
-   * Bloqueo hasta que llegue algun evento interesante
-   */
-  status = FALSE; /* -- aun no hay eventos interesantes */
+  status = FALSE;
 
   while (status == FALSE) {
     SDL_WaitEvent(event);
     status = ParseEvent(event);
   }
   return (status);
-} /* -- funcion NextEvent */
+}
 
 int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
   int status;
@@ -1967,7 +1794,6 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
 
     switch (event.key.keysym.sym) {
     case SDLK_q:
-      /* quits the app... */
       k->q = TRUE;
       break;
     case SDLK_0:
@@ -2307,7 +2133,7 @@ void Usage(char *ver, char *l_rev) {
   printf("Please, send bugs and suggestions to: mrevenga at "
                         "users.sourceforge.net\n");
 
-} /* -- funcion Usage */
+}
 
 int main(int argc, char *argv[]) {
   Uint32 background;
@@ -2318,7 +2144,7 @@ int main(int argc, char *argv[]) {
   char title[MAX_WORD_LEN] = "";
   int pos_columns[7];
 
-  int n_option_columns = 0; /* number of columns in input (-z option) */
+  int n_option_columns = 0;
 
   struct Window window;
   int statusblock;
@@ -2329,7 +2155,7 @@ int main(int argc, char *argv[]) {
   int sw_trace = 0;
 
   struct Block *b;
-  struct PosCol pos; /* position of the columns */
+  struct PosCol pos;
 
   struct Universe universe;
   struct DataFile dfile;
@@ -2364,11 +2190,6 @@ int main(int argc, char *argv[]) {
   }
 
   GetFileName(argc, argv, dfile.name);
-
-  /*
-   * data file properties
-   */
-
   if ((dfile.fp = fopen(dfile.name, "r")) == NULL) {
     perror(dfile.name);
     exit(EXIT_FAILURE);
@@ -2388,7 +2209,6 @@ int main(int argc, char *argv[]) {
     strncat(param.rootfilename, "_", 2);
   }
 
-  /* Read file properties: n. of columns , n. data rows of the first block  */
 
   dfile.ncol = NColumns(dfile.name);
 
@@ -2413,7 +2233,6 @@ int main(int argc, char *argv[]) {
   if (option.column == TRUE) {
     n_option_columns = GetColumns(param.colstr, dfile.ncol, pos_columns);
   }
-  /* dimension */
 
   val_run.dimension = SetDimension(param, option, dfile.ncol, n_option_columns);
   if (val_run.dimension > 3 || val_run.dimension < 1) {
@@ -2421,19 +2240,15 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "\tDimension calculated: %d\n", val_run.dimension);
     exit(EXIT_FAILURE);
   }
-  /* --dimension */
 
-  if (option.type > 2 || option.type < 0) { /* Default punto type */
+  if (option.type > 2 || option.type < 0) {
     option.type = SPHERE;
     fprintf(stderr, "Warning: incorrect option, setting type to sphere\n");
   }
 
-  /* order of columns  */
   OrderOfColumns(option, val_run.dimension, dfile.ncol, n_option_columns,
                  pos_columns, &pos);
-  /*  --order of columns */
 
-  /* assign memory */
 
   max_N = N + 1000;
 
@@ -2448,9 +2263,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  total_memory += max_N * (sizeof(struct Punto) + sizeof(long));
 
-  /* initializate the memory */
   for (i = 0; i < max_N; i++)
     tabla[i] = i;
 
@@ -2462,7 +2275,6 @@ int main(int argc, char *argv[]) {
   }
   block[0].comment = nocomment;
 
-  /* reading blocks */
 
   broot = CreateBlock();
   broot->pos = 0;
@@ -2479,7 +2291,6 @@ int main(int argc, char *argv[]) {
   universe.cm.z = (val_data.max_z + val_data.min_z) / 2;
   universe.cv = universe.cm;
 
-  /* values to use in the program */
 
   SetValues(val_data, param, option, &val_run);
   if (option.real_color == TRUE) {
@@ -2493,15 +2304,12 @@ int main(int argc, char *argv[]) {
   } else
     color_factor = 1;
 
-  /* --values to use in the program */
 
-  /* box */
   if (option.sizebox == TRUE) {
     if (GetBox(val_run.dimension, &param))
       option.sizebox = FALSE;
   }
-  BoxProperties(val_data, param, option, box); /* properties of the box */
-  /* --box */
+  BoxProperties(val_data, param, option, box);
   if (option.verbose > 1) {
     printf("CM: %f %f %f\n", universe.cm.x, universe.cm.y, universe.cm.z);
     printf("Cv: %f %f %f\n", universe.cv.x, universe.cv.y, universe.cv.z);
@@ -2525,10 +2333,8 @@ int main(int argc, char *argv[]) {
   else
     (universe.psize = DEFAULTRADIO);
   for (i = 0; i < numactivados; ++i) {
-    punto[i].active = 1;
   }
 
-  /* Initialize SDL */
 
   if (SDL_Init((Uint32)(SDL_INIT_VIDEO | SDL_INIT_TIMER)) < 0) {
     fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
@@ -2536,7 +2342,6 @@ int main(int argc, char *argv[]) {
   }
   atexit(SDL_Quit);
 
-  /* Set video mode */
   window.flags = SDL_WINDOW_RESIZABLE;
   window.w = WIDTH;
   window.h = HEIGHT;
@@ -2618,12 +2423,10 @@ int main(int argc, char *argv[]) {
   }
   SDL_SetWindowTitle(window.sdl_window, title);
 
-  /* Print out information about our surfaces */
   if (option.verbose > 1) {
     printf("Screen is at %d bits per pixel\n",
            (int)screen->format->BitsPerPixel);
   }
-  /* --Initialize SDL */
 
   if (option.gradient || option.real_color) {
     if (option.palette)
@@ -2680,7 +2483,6 @@ int main(int argc, char *argv[]) {
 
   done = 0;
 
-  /* SDL2: key repeat is handled by the OS, unicode via SDL_TextInputEvent */
 
   for (i = 0; i < ntrace; i++) {
     if ((traceball[i] =
@@ -2699,9 +2501,8 @@ int main(int argc, char *argv[]) {
     int status;
     static int cont = 0;
     static float delay = 0;
-    int md_x, md_y; /* coordinates when mouse is pressed */
+    int md_x, md_y;
 
-    /* Check for events */
     inc_ang2 = INC_ANG;
     status = FALSE;
     if (!delay && option.anim == TRUE)
@@ -2710,11 +2511,11 @@ int main(int argc, char *argv[]) {
     if (cont != 0) {
 
       if (((option.anim == TRUE && kEOF == FALSE) || kp.space == TRUE ||
-           kp.pressed)) { /* animation */
+           kp.pressed)) {
 
         do {
           status = CheckEvent(
-              &event); /* look for events, if exists, puts the first in event */
+              &event);
           time = SDL_GetTicks();
           if (time - time0 - delay + 10 > 0) {
             delay = 0;
@@ -2727,7 +2528,7 @@ int main(int argc, char *argv[]) {
         } while (delay && status == FALSE);
       } else {
         if (kp.pressed == FALSE) {
-          status = NextEvent(&event); /* wait for a event and put it in event */
+          status = NextEvent(&event);
         }
       }
     }
@@ -2795,7 +2596,6 @@ int main(int argc, char *argv[]) {
       if (kp.t == TRUE) {
         if (option.trace) {
           sw_trace = nextblock;
-          /* freeing memory  */
         }
         option.trace++;
         if (option.trace > 2)
@@ -2899,17 +2699,15 @@ int main(int argc, char *argv[]) {
       if (universe.ang.x || universe.ang.y || universe.ang.z)
         option.rotate = TRUE;
 
-    } /* if status==TRUE */
+    }
 
     if (option.trace == FALSE && sw_trace) {
       if (sw_trace - nextblock > 1 || nextblock - sw_trace > 1) {
-        /* freeing memory  */
         DrawTracePuntos(screen, window, universe, param, 0, 0);
         sw_trace = 0;
       }
     }
 
-    /* mouse click handle */
     {
       inmouse = 0;
       md_x = md_y = 0;
@@ -2929,11 +2727,9 @@ int main(int argc, char *argv[]) {
           }
         }
       }
-      /* the mouse clic event its finished */
       if (kp.mbup == TRUE)
         kp.mclick = FALSE;
     }
-    /* --mouse click handle */
 
     if (option.reverse == TRUE)
       kEOF = FALSE;
@@ -3013,7 +2809,7 @@ int main(int argc, char *argv[]) {
 
     Cont++;
     cont++;
-  } /* while(done) */
+  }
   for (i = 0; i < numsprites; i++) {
     if (bola[i].on == TRUE) {
       SDL_FreeSurface(bola[i].surface);
@@ -3075,7 +2871,7 @@ void MovePuntos(struct Universe u, struct Parametres par, struct Punto *p) {
   long n1, n2;
   static int cont;
 
-  if (cont == 0) { /* initialization */
+  if (cont == 0) {
     long i;
 
     for (i = 0; i < numactivados; i++)
@@ -3128,7 +2924,6 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
 
   if (actualizar == TRUE) {
 
-    /* delete the screen */
 
     if ((option.fast == FALSE || actualizar == TRUE)) {
       SDL_FillRect(screen, NULL, background);
@@ -3176,7 +2971,6 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
     if (option.verbose > 1)
       printf("sprites active: %d\n", CountSprites(bola, numsprites));
 
-    /* Upload framebuffer to texture and present */
     SDL_UpdateTexture(win.texture, NULL, screen->pixels, screen->pitch);
     SDL_RenderClear(win.renderer);
     SDL_RenderCopy(win.renderer, win.texture, NULL, NULL);
@@ -3205,7 +2999,6 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
   max = (screen->w > screen->h) ? screen->w : screen->h;
   max += max_nsize;
   factor = .5 * u.psize * u.zoom * u.zoom_size;
-  /* draw the sprite */
   sizeidx = (int)(u.psize * u.zoom_size);
   n1 = 0;
   n2 = numactivados;
@@ -3315,12 +3108,10 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
 
           break;
         }
-        total_memory += (sizeidx + 1) * (sizeidx + 1) * 16;
         bola[idx].on = TRUE;
       }
 
       p[t[i]].sprite = bola[idx].surface;
-      /* Blit the sprite onto the screen */
 
       position.x = (Sint16)((int)x - sizeidx);
       position.y = (Sint16)((int)y - sizeidx);
@@ -3335,8 +3126,6 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
       f.x = p[t[i]].vx1;
       f.y = p[t[i]].vy1;
       if (option.varfield == TRUE) {
-        /* factor=.5*size*universe.zoom*u.zoom_size*sqrt(f.x*f.x+f.y*f.y)/val_run.max_f;
-         */
         norm = val_run.max_f;
       } else {
         norm = sqrt(f.x * f.x + f.y * f.y);
@@ -3348,13 +3137,11 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
   }
 
   if (option.verbose > 1)
-    printf("m: %ldkB t:%d z:%f\n", total_memory / 1024, (int)(time / 1000), z);
 
   if (option.field) {
-    /* Unlock the surface. */
     SDL_UnlockSurface(screen);
   }
-} /* --DrawPuntos */
+}
 
 void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
                      struct Parametres par, float z, int order) {
@@ -3366,7 +3153,7 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
   static int trace_pos = 0;
   static int trace_cont = 1;
 
-  if (order == 0) { /* freeing memory */
+  if (order == 0) {
     trace_pos = 0;
     trace_cont = 1;
     trace_num = 1;
@@ -3413,7 +3200,6 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
     block = nextblock;
   }
 
-  /* reallocating memory for the trace points */
 
   if (numactivados > trace_num) {
 
@@ -3433,7 +3219,6 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
     }
     trace_num = numactivados;
   }
-  /* --reallocating memory for the trace points */
 
   for (i = n1; i < n2; i++) {
     traceball[trace_pos][i].x = punto[i].x;
@@ -3555,10 +3340,6 @@ int DrawPeriodicPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
 }
 
 void RangeOfValues(struct Punto *p, struct Options opt, struct Values *data) {
-  /*
-     function RangeofValues
-     set data with the max and min values of the first data block.
-   */
   int i;
 
   data->max_x = data->min_x = p[0].x;
@@ -3705,8 +3486,6 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize), i);
-        total_memory -=
-            ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         cont1++;
       } else {
         cont2++;
@@ -3724,7 +3503,6 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" <(%d) %d+%d ", i, i % max_nsize, (int)(i / max_nsize));
-        total_memory -= (i % max_nsize) * (i % max_nsize) * 16;
       }
     }
     break;
@@ -3741,8 +3519,6 @@ void PurgeSprites(struct Sprite *b, int type) {
           if (option.verbose > 1)
             printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize),
                    i);
-          total_memory -=
-              ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         }
       }
     }
@@ -3760,8 +3536,6 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize), i);
-        total_memory -=
-            ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         continit++;
       }
     }
@@ -3780,7 +3554,6 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" <%d+%d ", i % max_nsize, (int)(i / max_nsize));
-        total_memory -= (i % max_nsize) * (i % max_nsize) * 16;
       }
     }
     break;
@@ -3789,20 +3562,12 @@ void PurgeSprites(struct Sprite *b, int type) {
 
 struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
                         long *numact, struct Punto *p, int *status) {
-  /*
-     Read the next block, and actualize the struct Punto p.
-     keep the new comment if exists.
-
-     returns:
-     the struct Punto that has the data,
-     may be different if there is a reallocation of memory.
-   */
   size_t i, j, k;
   double *temp;
   long cont = 0;
   int reallocpunto = FALSE;
-  static int lastblock = -1; /* last block readed */
-  static int maxblock = 0;   /* max number block  */
+  static int lastblock = -1;
+  static int maxblock = 0;
 
   struct Block *b;
   char line[MAX_LINE_LEN];
@@ -3813,7 +3578,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
   int rvalue;
   int linecont = 0;
 
-  /* is the same block? */
 
   if (*next == lastblock) {
     *status = FALSE;
@@ -3821,7 +3585,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
   }
 
   *status = TRUE;
-  /* the first time check the size of the file */
 
   b = broot;
   cont = 0;
@@ -3849,7 +3612,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
 
   comment = nocomment;
 
-  /* go to the n=next block */
 
   if ((*next - lastblock != 1 || maxblock <= lastblock)) {
     if (fseek(df.fp, b->pos, SEEK_SET) == -1)
@@ -3862,7 +3624,7 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
     linecont++;
 
     typeline = AnalizeLine(line);
-    if (typeline == COMMENT && sw == 0) { /* copy the first comment */
+    if (typeline == COMMENT && sw == 0) {
       strncpy(comentario, line, MAX_WORD_LEN);
       comment = comentario;
       sw = 1;
@@ -3907,7 +3669,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
       }
       i++;
       if (i >= (size_t)max_N) {
-        /* reallocating memory if it is necesary */
         if ((p = realloc(
                  p, (size_t)(i + 1024) * sizeof(struct Punto))) == NULL) {
           perror("realloc");
@@ -3938,7 +3699,7 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
 
   *numact = b->num;
   return (p);
-} /*-- function ReadBlock  */
+}
 
 int NextBlock(float x, char *fn) {
 
@@ -3966,18 +3727,9 @@ int NextBlock(float x, char *fn) {
   return (cont - 1);
 }
 
-/*  independent Functions */
 
 int Arguments(int argc, char *argv[], struct Options *opt,
               struct Parametres *par)
-/* function Arguments
-   Check the validity of command line arguments.
-   set in struct Parametres *par the command line arguments.
-   set options acording with the command line arguments
-   return:
-   an error code or
-   zero if there no error.
-*/
 {
   int i;
   char c;
@@ -3985,7 +3737,7 @@ int Arguments(int argc, char *argv[], struct Options *opt,
   char *pointer;
   char *endptr = NULL;
   static char str[MAX_WORD_LEN] = "",
-              str0[MAX_WORD_LEN] = ""; /* str0[] is used for deleting str[] */
+              str0[MAX_WORD_LEN] = "";
   int flag = 0;
   int narg;
   char arg[MAX_WORD_LEN] = "";
@@ -4340,13 +4092,10 @@ int Arguments(int argc, char *argv[], struct Options *opt,
     opt->radio = FALSE;
   }
   return (0);
-} /* --funtion Arguments  */
+}
 
 void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
                struct Values *val) {
-  /*
-     Set the program values from the data values
-   */
   val->max_r = val_d.max_r;
   val->min_r = val_d.min_r;
   if (opt.radio == TRUE) {
@@ -4384,10 +4133,6 @@ void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
 
 int SetDimension(struct Parametres par, struct Options opt, int ncol,
                  int noptcol) {
-  /*
-     return the dimension of the data file
-   */
-
   int num_options;
   int d;
 
@@ -4421,10 +4166,6 @@ int SetDimension(struct Parametres par, struct Options opt, int ncol,
 }
 
 int GetColumns(char *str, int ncolf, int *p_col) {
-  /*
-     return:
-     the number of columns given as option -w
-   */
   int i;
   char *cpointer;
   int n;
@@ -4441,7 +4182,7 @@ int GetColumns(char *str, int ncolf, int *p_col) {
       }
       cpointer++;
       strncpy(str, cpointer, strlen(cpointer) + 1);
-    } else { /* last enter */
+    } else {
       strncpy(str, str, strlen(str) + 1);
       p_col[i] = atoi(str);
       if (p_col[i] == 0) {
@@ -4453,7 +4194,6 @@ int GetColumns(char *str, int ncolf, int *p_col) {
   }
   n = i + 1;
 
-  /* Checking values */
 
   for (i = 0; i < n; i++) {
     if (p_col[i] > ncolf || p_col[i] < 0) {
@@ -4470,10 +4210,6 @@ int GetColumns(char *str, int ncolf, int *p_col) {
 
 void OrderOfColumns(struct Options opt, int d, int ncol, int noptc, int *posc,
                     struct PosCol *p) {
-  /*
-     set in struct PosCol p which represent each column;
-     what column represent x,y,z, etc.
-   */
   int idx = 0;
 
   p->x = p->y = p->z = ncol;
@@ -4563,13 +4299,6 @@ void OrderOfColumns(struct Options opt, int d, int ncol, int noptc, int *posc,
 }
 
 int GetBox(int d, struct Parametres *par) {
-  /*
-     get box values from command line options
-     return:
-     0 if no error is found
-     1 if an error is found in command line -B parameters
-   */
-
   int i, cont = 0;
   double tmp[6] = {0, 0, 0, 1, 1, 1};
   char *cpointer;
@@ -4592,7 +4321,7 @@ int GetBox(int d, struct Parametres *par) {
         }
         cpointer++;
         strncpy(bstr, cpointer, strlen(cpointer) + 1);
-      } else { /* last element */
+      } else {
         strncpy(str, bstr, strlen(bstr) + 1);
         tmp[i] = (float)strtod(str, &endptr);
         if (str != endptr) {
@@ -4638,10 +4367,6 @@ int GetBox(int d, struct Parametres *par) {
 
 void BoxProperties(struct Values val_d, struct Parametres par,
                    struct Options opt, struct Punto *b) {
-  /*
-     Set the led box values
-   */
-
   b[0].x = val_d.min_x;
   b[0].y = val_d.min_y;
   b[0].z = val_d.max_z;
@@ -4710,9 +4435,6 @@ void BoxProperties(struct Values val_d, struct Parametres par,
 }
 
 void SetInitialValues(struct Options *opt, struct Keys *k) {
-  /*
-     set the initial values for the structs options and kp.
-   */
   opt->color = FALSE;
   opt->radio = FALSE;
   opt->geometria = FALSE;
