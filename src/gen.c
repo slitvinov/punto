@@ -8,7 +8,7 @@
 static const char *me = "bin/gen";
 static const char *DATADIR = "data/";
 
-int main() {
+int main(void) {
   FILE *fp;
   int i, j;
   int aleatorio = 1;
@@ -27,7 +27,7 @@ int main() {
   int campo3D = 1;
   int stars = 1;
   int all = 1;
-  char name[20];
+  char name[FILENAME_MAX];
 
   if (aleatorio) {
     strcpy(name, DATADIR);
@@ -339,10 +339,10 @@ int main() {
 
     j = 0;
     for (i = 0; j < 100000; j++) {
-      r = (float)((float)rand() / RAND_MAX) / 10;
-      x = (float)((float)rand() / RAND_MAX) * 10 - 5;
-      y = (float)((float)rand() / RAND_MAX) * 10 - 5;
-      z = (float)((float)rand() / RAND_MAX) * 10 - 5;
+      r = (float)((float)(rand() / (double)RAND_MAX)) / 10;
+      x = (float)((float)(rand() / (double)RAND_MAX)) * 10 - 5;
+      y = (float)((float)(rand() / (double)RAND_MAX)) * 10 - 5;
+      z = (float)((float)(rand() / (double)RAND_MAX)) * 10 - 5;
 
       fprintf(fp, "%f %f %f %f %d\n", x, y, z, r, rand() % 4096);
 
@@ -364,9 +364,9 @@ int main() {
     for (j = 0; j < 65; j++) {
       for (i = 0; i < 65; i++) {
         r = (float)(i + 1); //(float)((float)rand()/RAND_MAX)/10;
-        x = (float)((float)rand() / RAND_MAX) * 600 - 300;
-        y = (float)((float)rand() / RAND_MAX) * 600 - 300;
-        z = (float)((float)rand() / RAND_MAX) * 600 - 300;
+        x = (float)((float)(rand() / (double)RAND_MAX)) * 600 - 300;
+        y = (float)((float)(rand() / (double)RAND_MAX)) * 600 - 300;
+        z = (float)((float)(rand() / (double)RAND_MAX)) * 600 - 300;
 
         fprintf(fp, "%f %f %f %f %d\n", x, y, z, r, j);
       }
@@ -447,10 +447,10 @@ int main() {
     fp = fopen(name, "wt");
     fprintf(fp, "%f %f %f %f %f\n", 0., 0., 0., 1., 2.);
     for (i = 0; i < n; i++) {
-      x = ((float)rand() / RAND_MAX * h);
-      y = ((float)rand() / RAND_MAX * h);
-      z = 1000 + ((float)rand() / RAND_MAX * h);
-      size = (float)rand() / RAND_MAX * 300 / sqrt(z);
+      x = ((float)(rand() / (double)RAND_MAX) * h);
+      y = ((float)(rand() / (double)RAND_MAX) * h);
+      z = 1000 + ((float)(rand() / (double)RAND_MAX) * h);
+      size = (float)(rand() / (double)RAND_MAX) * 300 / sqrt(z);
       color = 1 + 40. / sqrt(z);
       fprintf(fp, "%f %f %f %f %f\n", x, y, z, size, color);
     }
@@ -472,10 +472,10 @@ int main() {
     j = 0;
     fprintf(fp, "%ld\n\n", NUM);
     for (i = 0; j < NUM; j++) {
-      r = (float)((float)rand() / RAND_MAX) / 100;
-      x = (float)((float)rand() / RAND_MAX) * size - (size * .5);
-      y = (float)((float)rand() / RAND_MAX) * size - (size * .5);
-      z = (float)((float)rand() / RAND_MAX) * size - (size * .5);
+      r = (float)((float)(rand() / (double)RAND_MAX)) / 100;
+      x = (float)((float)(rand() / (double)RAND_MAX)) * size - (size * .5);
+      y = (float)((float)(rand() / (double)RAND_MAX)) * size - (size * .5);
+      z = (float)((float)(rand() / (double)RAND_MAX)) * size - (size * .5);
 
       fprintf(fp, "He %f %f %f\n", x, y, z);
 

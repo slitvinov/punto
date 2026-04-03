@@ -181,9 +181,10 @@ struct Keys {
 
 struct Window {
   SDL_Window *sdl_window;
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
   SDL_Surface *screen;
   int w, h; /* width, height */
-  int bpp;
   Uint32 flags;
   struct Point shift;
 };

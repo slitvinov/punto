@@ -232,8 +232,14 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
       w->w = w0;
       w->h = h0;
 
-      w->screen = SDL_GetWindowSurface(w->sdl_window);
+      SDL_FreeSurface(w->screen);
+      w->screen = SDL_CreateRGBSurface(0, w->w, w->h, 32, 0x00FF0000,
+                                       0x0000FF00, 0x000000FF, 0xFF000000);
       screen = w->screen;
+      SDL_DestroyTexture(w->texture);
+      w->texture =
+          SDL_CreateTexture(w->renderer, SDL_PIXELFORMAT_ARGB8888,
+                            SDL_TEXTUREACCESS_STREAMING, w->w, w->h);
       status = TRUE;
     }
     break;
@@ -844,7 +850,6 @@ int main(int argc, char *argv[]) {
     window.w = param.width;
     window.h = param.height;
   }
-  window.bpp = 0;
 
   window.sdl_window =
       SDL_CreateWindow("punto", SDL_WINDOWPOS_UNDEFINED,
@@ -855,11 +860,22 @@ int main(int argc, char *argv[]) {
             SDL_GetError());
     exit(EXIT_FAILURE);
   }
-  screen = SDL_GetWindowSurface(window.sdl_window);
-  if (!screen) {
-    fprintf(stderr, "Couldn't get window surface: %s\n", SDL_GetError());
+  window.renderer =
+      SDL_CreateRenderer(window.sdl_window, -1, SDL_RENDERER_ACCELERATED);
+  if (!window.renderer) {
+    fprintf(stderr, "Couldn't create renderer: %s\n", SDL_GetError());
     exit(EXIT_FAILURE);
   }
+
+  screen = SDL_CreateRGBSurface(0, window.w, window.h, 32, 0x00FF0000,
+                                0x0000FF00, 0x000000FF, 0xFF000000);
+  if (!screen) {
+    fprintf(stderr, "Couldn't create framebuffer: %s\n", SDL_GetError());
+    exit(EXIT_FAILURE);
+  }
+  window.texture =
+      SDL_CreateTexture(window.renderer, SDL_PIXELFORMAT_ARGB8888,
+                        SDL_TEXTUREACCESS_STREAMING, window.w, window.h);
   window.screen = screen;
 
   defaultcolor = SDL_MapRGB(screen->format, 0, 0, 250);
@@ -1317,6 +1333,10 @@ int main(int argc, char *argv[]) {
     }
   }
   now = SDL_GetTicks();
+  SDL_FreeSurface(screen);
+  SDL_DestroyTexture(window.texture);
+  SDL_DestroyRenderer(window.renderer);
+  SDL_DestroyWindow(window.sdl_window);
   SDL_Quit();
   return (0);
 }
@@ -1483,10 +1503,11 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
     if (option.verbose > 1)
       printf("sprites active: %d\n", CountSprites(bola, numsprites));
 
-    /* Update the screen! */
-    SDL_UpdateWindowSurface(win.sdl_window);
-    /*      SDL_Flip(screen2); */
-    /*      SDL_UpdateRect(screen2, 0,0,LEDW,LEDH); */
+    /* Upload framebuffer to texture and present */
+    SDL_UpdateTexture(win.texture, NULL, screen->pixels, screen->pitch);
+    SDL_RenderClear(win.renderer);
+    SDL_RenderCopy(win.renderer, win.texture, NULL, NULL);
+    SDL_RenderPresent(win.renderer);
   }
 }
 
