@@ -32,7 +32,7 @@ int main(void) {
   if (aleatorio) {
     strcpy(name, DATADIR);
     strcat(name, "aleatori03d.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
     if (fp == NULL) {
       fprintf(stderr, "%s: fail to open '%s'\n", me, name);
       exit(2);
@@ -50,7 +50,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "carbono.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     fprintf(fp, "%f %f %f %d %d\n", 0., 0., 0., 1, 2);
     fprintf(fp, "%f %f %f %d %d\n", 1., 0., 0., 1, 2);
@@ -66,7 +66,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "red3d.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = z = 0;
     for (z = 0; z < .5; z += inc) {
@@ -93,7 +93,7 @@ int main(void) {
     inc = 1 / r;
     strcpy(name, DATADIR);
     strcat(name, "deathstar.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = z = 0;
     cont = 0;
@@ -125,7 +125,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "onda.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = z = 0;
     inc = .5;
@@ -149,7 +149,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "unaD.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = 0;
     inc = .5;
@@ -169,7 +169,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "lisa.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = 0;
     inc = .5;
@@ -203,7 +203,7 @@ int main(void) {
     }
     strcpy(name, DATADIR);
     strcat(name, "fuente.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
     fprintf(fp, "#Time: %f paso: %d", t, paso);
     fprintf(fp, " x:%f y:%f z:%f r:%f v:%f\n", x0, y0, z0, radio[i], 0.0);
 
@@ -268,7 +268,7 @@ int main(void) {
     }
     strcpy(name, DATADIR);
     strcat(name, "fuente.xyz");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     fprintf(fp, "%d\n\n", 2);
     fprintf(fp, "Fe %f %f %f\n", -SIZE, -SIZE, -SIZE);
@@ -316,7 +316,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "colors.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = z = 0;
     x0 = 0;
@@ -335,7 +335,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "infinito.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     j = 0;
     for (i = 0; j < 100000; j++) {
@@ -358,7 +358,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "all.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     j = 0;
     for (j = 0; j < 65; j++) {
@@ -384,7 +384,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "field2d.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = 0;
     x0 = y0 = .5;
@@ -413,7 +413,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "field3d.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     x = y = z = 0;
     x0 = y0 = z0 = .5;
@@ -444,7 +444,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "stars.dat");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
     fprintf(fp, "%f %f %f %f %f\n", 0., 0., 0., 1., 2.);
     for (i = 0; i < n; i++) {
       x = ((float)(rand() / (double)RAND_MAX) * h);
@@ -467,7 +467,7 @@ int main(void) {
 
     strcpy(name, DATADIR);
     strcat(name, "infinito.xyz");
-    fp = fopen(name, "wt");
+    fp = fopen(name, "w");
 
     j = 0;
     fprintf(fp, "%ld\n\n", NUM);

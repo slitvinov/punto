@@ -136,7 +136,7 @@ void ReadRGBColors(char *fname, struct RGBColor *color, int n) {
   int status;
   size_t len;
 
-  if ((fp = fopen(fname, "rt")) == NULL) {
+  if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
     exit(EXIT_FAILURE);
   }

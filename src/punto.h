@@ -121,12 +121,6 @@ struct RGBColor {
   char name[MAX_WORD_LEN];
 };
 
-struct Buffer {
-  long ipos, fpos;
-  long size;
-  char buf[BLOCK_BUF_SIZE]; // 8192
-};
-
 struct Block {
   int read; /* its already readed? */
   long pos; /* address to the data file position of the block */
@@ -220,9 +214,6 @@ void SetInitialValues(struct Options *opt, struct Keys *k);
 
 struct Punto *ReadBlock(int *n, struct DataFile, struct PosCol pos, long *,
                         struct Punto *p, int *);
-struct Punto *ReadBlock_00(int *n, FILE *fp, struct PosCol pos, int num_col,
-                           long *, struct Punto *p, int *);
-
 void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
              struct Parametres par, Uint32 background, struct DataFile df);
 void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe,

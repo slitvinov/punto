@@ -91,7 +91,6 @@ struct Options option;
 
 struct Punto box[8]; /* coordinates of the box */
 
-int nsprites;
 int max_nsize; /* max. number of diferent sizes (for sprites) */
 
 long numactivados;
@@ -110,8 +109,7 @@ int Cont = 0;
 int kEOF = FALSE;
 
 Uint32 colortable[MAX_NSCOLORS];
-SDL_Surface *screen, *screen2;
-Uint32 videoflags;
+SDL_Surface *screen;
 struct Keys kp;
 Uint32 defaultcolor, ledcolor;
 Uint32 bgcolor, fgcolor;
@@ -191,19 +189,6 @@ int NextEvent(SDL_Event *event) {
   }
   return (status);
 } /* -- funcion NextEvent */
-
-int CleanEvent() {
-  int status;
-  SDL_Event event;
-
-  status = FALSE;
-
-  while (SDL_PollEvent(NULL) > 0) {
-    SDL_PollEvent(&event);
-    status = TRUE;
-  }
-  return (status);
-}
 
 int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
   //  int width,height;
@@ -618,7 +603,7 @@ int main(int argc, char *argv[]) {
   long i;
   int done;
   SDL_Event event;
-  Uint32 then, now, frames;
+  Uint32 now;
   char title[MAX_WORD_LEN] = "";
   int pos_columns[7];
 
@@ -673,7 +658,7 @@ int main(int argc, char *argv[]) {
    * data file properties
    */
 
-  if ((dfile.fp = fopen(dfile.name, "rt")) == NULL) {
+  if ((dfile.fp = fopen(dfile.name, "r")) == NULL) {
     perror(dfile.name);
     exit(EXIT_FAILURE);
   }
@@ -945,8 +930,13 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  universe.escale.x = (float)window.w / (val_data.max_x - val_data.min_x);
-  universe.escale.y = (float)window.h / (val_data.max_y - val_data.min_y);
+  {
+    float dx = val_data.max_x - val_data.min_x;
+    float dy = val_data.max_y - val_data.min_y;
+
+    universe.escale.x = dx > 0 ? (float)window.w / dx : 1;
+    universe.escale.y = dy > 0 ? (float)window.h / dy : 1;
+  }
   if (option.sizebox == TRUE) {
     universe.escale.x = (float)window.w / (param.box.x1 - param.box.x0);
     universe.escale.y = (float)window.h / (param.box.y1 - param.box.y0);
@@ -981,9 +971,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /* Loop, blitting sprites and waiting for a keystroke */
-  frames = 0;
-  then = SDL_GetTicks();
   done = 0;
 
   /* SDL2: key repeat is handled by the OS, unicode via SDL_TextInputEvent */
@@ -1006,10 +993,8 @@ int main(int argc, char *argv[]) {
     static int cont = 0;
     static float delay = 0;
     int md_x, md_y; /* coordinates when mouse is pressed */
-    int mu_x, mu_y; /* coordinates when mouse is released */
 
     /* Check for events */
-    ++frames;
     inc_ang2 = INC_ANG;
     status = FALSE;
     //    printf("%g ",zoom);fflush(stdout);
@@ -1063,7 +1048,6 @@ int main(int argc, char *argv[]) {
         option.mode = (option.mode == ZOOM) ? NAV : ZOOM;
         kp.n++;
       }
-      option.mode = ZOOM; // HERE TODO option mode and navigation
 
       if (kp.u == TRUE) {
         option.varfield = (option.varfield == TRUE) ? FALSE : TRUE;
@@ -1224,13 +1208,13 @@ int main(int argc, char *argv[]) {
     /* mouse click handle */
     {
       inmouse = 0;
-      md_x = md_y = mu_x = mu_y = 0;
+      md_x = md_y = 0;
       if (kp.mbdown == TRUE) {
         (void)SDL_GetMouseState(&md_x, &md_y);
         kp.mbdown = FALSE;
       }
       if (kp.mbup == TRUE && kp.mclick == TRUE) {
-        (void)SDL_GetMouseState(&mu_x, &mu_y);
+        (void)SDL_GetMouseState(NULL, NULL);
       }
       if (md_x - filerect.x + 20 > 0 &&
           (filerect.x + filerect.l + 20) - md_x > 0) {
@@ -1518,7 +1502,7 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
   SDL_Rect position;
   Uint32 time;
   float x, y;
-  int max, max2;
+  int max;
   int coloridx;
   int idx;
   int sizeidx;
@@ -1531,7 +1515,6 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
 
   max = (screen->w > screen->h) ? screen->w : screen->h;
   max += max_nsize;
-  max2 = 2 * max;
   factor = .5 * u.psize * u.zoom * u.zoom_size;
   /* draw the sprite */
   sizeidx = (int)(u.psize * u.zoom_size);
@@ -2142,21 +2125,6 @@ void PurgeSprites(struct Sprite *b, int type) {
       }
     }
     break;
-  }
-}
-
-void Reescal_Color(int N, struct Punto *p1, struct Punto *p, float max_nc,
-                   float min_color, float color_factor) {
-  int i;
-
-  for (i = 0; i < N; i++) {
-    p1[i].color = (p[i].color - min_color) * color_factor;
-    if (p1[i].color < 0) {
-      p1[i].color = 0;
-    }
-    if (p1[i].color > max_nc - 1) {
-      p1[i].color = max_nc - 1;
-    }
   }
 }
 

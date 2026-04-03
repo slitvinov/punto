@@ -107,7 +107,7 @@ long CountLines(char *fname) {
   int nlines, nchar, comment;
   int endblock;
 
-  if ((fp = fopen(fname, "rt")) == NULL) {
+  if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
     exit(EXIT_FAILURE);
   }
@@ -196,7 +196,7 @@ int NColumns(char *fname)
   np = 0;
   dentropal = FALSE;
   //  printf("data file : (%s)\n",fname);
-  if ((fp = fopen(fname, "rt")) == NULL) {
+  if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
     exit(EXIT_FAILURE);
   }
@@ -334,7 +334,7 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
 
   //  long ntbytes=0;
 
-  if ((fp = fopen(fname, "rt")) == NULL) {
+  if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
     exit(EXIT_FAILURE);
   }
