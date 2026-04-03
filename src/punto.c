@@ -14,8 +14,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define INFO FALSE
-
 #define CIRCLE 0
 #define SQUARE 1
 #define SPHERE 2
@@ -26,18 +24,8 @@
 #define ZOOM 0
 #define NAV 1
 
-#define FORE 1
-#define BACK 2
-
-#define BLOCK_BUF_SIZE 8192
 #define MAX_LINE_LEN 4096
 #define MAX_WORD_LEN 128
-#define HEIGHT_OFFSET 20
-
-#define BIGINT 1000000 /* max. number of puntos per frame */
-
-#define ARROWCOLOR 2
-#define LEDCOLOR 2
 
 #define LEDW 50 /* width & height of the led zone */
 #define LEDH 50
@@ -50,9 +38,6 @@
 #define MAX_NSIZE 64           /* num. of diferent sizes  */
 #define MAX_NCOLORS 752        /*  464 number of names for colors  */
 #define MAX_NSCOLORS 64        /* number of colors 3D */
-#define MAX_NGRADIENTS 64      /* number of gradients of color, for 3D */
-#define MAX_NCOLOR_GRADIENT 64 /* numero de gradientes para paleta */
-#define NPIXSIMBOLS 92
 
 #define TRACE_DEFAULT 50
 #define TRACE_MAX 500 /* max number of trace points */
@@ -63,7 +48,6 @@
 #define GREEN 2
 #define BLUE 3
 #define GREY 4
-#define GRAY 4
 
 #define FONTSIZE 3
 
@@ -71,13 +55,10 @@
 #define COMMENT 2
 #define DATA 3
 
-#define CONFFILE ".puntorc"
-
 #define DEFAULTZOOM 0.9
 #define DEFAULTPALETTE SPECTRUM
 #define DEFAULTRADIO 12
 #define DEFAULTTYPE SPHERE
-#define DEFAULTCOLOR 0
 
 #define BUFFER_SIZE 8192
 #define CHAR 1
@@ -139,7 +120,6 @@ struct RGBColor {
 };
 
 struct Block {
-  int read; /* its already readed? */
   long pos; /* address to the data file position of the block */
   long len;
   long num;           /* number of elements */
@@ -155,7 +135,6 @@ struct Values {
   float max_c, min_c;
   float max_f, min_f;
   float max_x, min_x, max_y, min_y, max_z, min_z;
-  /*  float max_fx,min_fx,max_fy,min_fy,max_fz,min_fz; */
 };
 
 struct Keys {
@@ -409,7 +388,6 @@ long total_memory = 0;
 int actualizar = TRUE;
 int ntrace = TRACE_DEFAULT;
 
-char defaultcolorname[MAX_WORD_LEN] = "blue";
 struct Options option;
 
 struct Punto box[8]; /* coordinates of the box */
@@ -420,7 +398,6 @@ long numactivados;
 long N;     /* number of particles of one block */
 long max_N; /*  max. number of puntos along all the file */
 
-int ContBlock = 0;
 int nextblock = 0; /* next block to read */
 
 struct Block *block;
@@ -628,8 +605,6 @@ long _RBuffer(char *cad, int len, int type, FILE *fp) {
     break;
 
   case LINE:
-    //    printf("reading a line\n");
-
     lword = 0;
     eow = 0;
     do {
@@ -785,7 +760,6 @@ int NumRet(FILE *fp) {
         exit(EXIT_FAILURE);
       }
     } else {
-      //    if(fscanf(fp,"%c",&s) == EOF){eof=TRUE; break;}//return(-1);
       if (s == '\n') {
         ret++;
         file_pos = ftell(fp);
@@ -807,7 +781,6 @@ int NumRet(FILE *fp) {
               exit(EXIT_FAILURE);
             }
           }
-          //    if(fscanf(fp,"%c",&s) == EOF){eof=TRUE;break;}
           if (s == '\n') {
             ret++;
             file_pos = ftell(fp); /* new position of the file */
@@ -842,7 +815,6 @@ long CountLines(char *fname) {
   }
   /* go to the first data line */
   (void)NumRet(fp);
-  // retorno=NumRet(fp;
 
   nlines = 0;
   endblock = 0;
@@ -924,7 +896,6 @@ int NColumns(char *fname)
 
   np = 0;
   dentropal = FALSE;
-  //  printf("data file : (%s)\n",fname);
   if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
     exit(EXIT_FAILURE);
@@ -1042,12 +1013,10 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
 
   FILE *fp;
 
-  //  struct Buffer buf;
   char line[MAX_LINE_LEN];
   int type;
   int sw;
 
-  //  int eoffile;
   long file_pos;
   long file_pos0;
   long file_size;
@@ -1060,8 +1029,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
   int infile = 0;
   int numblock = 0;
   long nrbytes = 0;
-
-  //  long ntbytes=0;
 
   if ((fp = fopen(fname, "r")) == NULL) {
     perror(fname);
@@ -1086,8 +1053,6 @@ int ReadNBlocks(char *fname, struct Block *br, long fpos) {
 
     strncpy(line, "", (size_t)1);
     nrbytes = RLine(line, MAX_LINE_LEN, fp);
-    //    ntbytes+=nrbytes;
-    //    incpos=nrbytes;
 
     type = AnalizeLine(line);
 
@@ -1156,7 +1121,6 @@ struct Block *CreateBlock(void) {
     exit(EXIT_FAILURE);
   }
 
-  bloque->read = 0;
   bloque->pos = 0;
   bloque->len = 0;
   bloque->num = 0;
@@ -1277,8 +1241,6 @@ int ReadLine(FILE *fp, char *cad) {
   char c;
   int i;
   size_t status = 0;
-
-  //  fscanf(fp,"%s",&cad);
 
   i = 0;
   status = fread(&c, sizeof(char), 1, fp);
@@ -1510,13 +1472,6 @@ void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
   if (y >= surface->h)
     return;
 
-  /*    if (SDL_MUSTLOCK(surface)) { */
-  /*      if (SDL_LockSurface(surface) < 0) { */
-  /*        printf("Error locking surface: %s\n", SDL_GetError()); */
-  /*        abort(); */
-  /*      } */
-  /*    } */
-
   p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
 
   switch (bpp) {
@@ -1544,8 +1499,6 @@ void PutPixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
     *(Uint32 *)p = pixel;
     break;
   }
-  /* Unlock the surface. */
-  //  SDL_UnlockSurface(surface);
 }
 
 Uint32 GetPixel(SDL_Surface *surface, int x, int y)
@@ -1591,13 +1544,6 @@ void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
   int xerr = 0, yerr = 0, d_x, d_y;
   int incx, incy;
 
-  /*    if (SDL_MUSTLOCK(surface)) {  */
-  /*      if (SDL_LockSurface(surface) < 0) {  */
-  /*        printf("Error locking surface: %s\n", SDL_GetError());  */
-  /*        abort();  */
-  /*      }  */
-  /*    }  */
-
   d_x = x1 - x0;
   d_y = y1 - y0;
 
@@ -1635,8 +1581,6 @@ void DrawLine(SDL_Surface *surface, int x0, int y0, int x1, int y1,
       y0 += incy;
     }
   }
-  /* Unlock the surface. */
-  /*    SDL_UnlockSurface(surface); */
 }
 
 
@@ -1737,10 +1681,8 @@ void FillCircle(SDL_Surface *surface, int x0, int y0, int r, Uint32 color) {
   int x, y;
   float r2;
 
-  //  if(r<=0)return;
   r2 = (float)r * r;
 
-  //  DrawCircle(surface,x0,y0,r,color);
   if (r == 0) {
     PutPixel(surface, x0, y0, color);
   } else {
@@ -2718,7 +2660,6 @@ void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
     strcat(number, "0");
   snprintf(num_file, 5, "%d", save_cont);
   strcat(number, num_file);
-  // strncat(name,num_file,4);
   strcat(name, number);
   strcat(name, ".bmp");
 
@@ -2731,7 +2672,6 @@ void WriteBitmap(SDL_Surface *bitmap, char *fpname) {
   else {
     fprintf(stderr, "Warning: maximun number of files reached.\n");
   }
-  //  save_cont++;
   printf("saved: %s\n", name);
 }
 
@@ -2869,7 +2809,6 @@ int NextEvent(SDL_Event *event) {
   status = FALSE; /* -- aun no hay eventos interesantes */
 
   while (status == FALSE) {
-    //    SDL_PumpEvents();
     SDL_WaitEvent(event);
     status = ParseEvent(event);
   }
@@ -2877,7 +2816,6 @@ int NextEvent(SDL_Event *event) {
 } /* -- funcion NextEvent */
 
 int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
-  //  int width,height;
   int status;
 
   static int block_a = FALSE;
@@ -2915,14 +2853,12 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
     }
     break;
   case SDL_KEYDOWN:
-    //    PrintKey(&event.key.keysym, 1);
     status = TRUE;
 
     k->shift = FALSE;
     if (event.key.keysym.mod & KMOD_LSHIFT ||
         event.key.keysym.mod & KMOD_RSHIFT) {
       k->shift = TRUE;
-      //      status=FALSE;
     }
 
     switch (event.key.keysym.sym) {
@@ -3060,7 +2996,6 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
     }
     break;
   case SDL_KEYUP:
-    //  PrintKey(&event.key.keysym, 0);
     k->pressed = FALSE;
     status = TRUE;
     switch (event.key.keysym.sym) {
@@ -3157,7 +3092,6 @@ int EventLoop(SDL_Event event, struct Window *w, struct Keys *k) {
       break;
     }
     break;
-    /*    case SDL_PRESSED: */
   case SDL_MOUSEBUTTONDOWN:
     k->mclick = TRUE;
     k->mbdown = TRUE;
@@ -3210,10 +3144,6 @@ void Usage(char *ver, char *l_rev) {
   (void)fprintf(stdout, "-c \tthere is a column of colors.\n");
   (void)fprintf(stdout, "-e \"fname\" save pixmap and exit.\n");
   (void)fprintf(stdout, "-w Obsolote. as -G.\n");
-  //"-w [min:max]\tas -c but the colors are reescaled between min and max
-  // values, \n" );
-  //  (void) fprintf( stdout,
-  //          "\tuseful if the color column has negative values.\n" );
   (void)fprintf(stdout, "-G [min:max] \tThe colors are a gradient scale. \n");
   (void)fprintf(stdout, "-p num \twhere num is the gradient palette. \n");
   (void)fprintf(stdout,
@@ -3266,8 +3196,6 @@ void Usage(char *ver, char *l_rev) {
   (void)fprintf(stdout, "+(plus)\t\tincrease delay between frames.\n");
   (void)fprintf(stdout, "-(minus)\tdecrease delay between frames.\n");
   (void)fprintf(stdout, ".(period)\tsets delay time to the initial value.\n");
-  //  (void) fprintf( stdout,
-  //          "left mouse bottom   stops,starts animation.\n");
   (void)fprintf(stdout, "s   \tstops, starts animation.\n");
   (void)fprintf(stdout, "space   step by step animation.\n");
   (void)fprintf(stdout, "b\tborder box on off.\n");
@@ -3276,7 +3204,6 @@ void Usage(char *ver, char *l_rev) {
   (void)fprintf(stdout, "To see all available colors, type punto -h color.\n");
 
   (void)fprintf(stdout, "\nCopyleft mrevenga 1998-2009 ");
-  //          "\nCopyleft XaY 1998 ");
   (void)fprintf(stdout, "%s", ver);
   (void)fprintf(stdout, "\nlast revision %s\n", l_rev);
   (void)fprintf(stdout, "Please, send bugs and suggestions to: mrevenga at "
@@ -3435,7 +3362,6 @@ int main(int argc, char *argv[]) {
     perror("calloc");
     exit(EXIT_FAILURE);
   }
-  block[0].read = FALSE;
   block[0].comment = nocomment;
 
   /* reading blocks */
@@ -3650,8 +3576,6 @@ int main(int argc, char *argv[]) {
         CreateBall3D(screen, defaultcolor,
                      (universe.psize + 1) * (universe.psize < MAX_NSIZE) +
                          MAX_NSIZE * (universe.psize > MAX_NSIZE));
-    //    printf("optionradio:%d universe.psize: %d
-    //    spr:%p\n",option.radio,universe.psize,bola[0].surface);
     for (i = 1; i < numactivados; ++i) {
       punto[i].sprite = bola[0].surface;
     }
@@ -3683,7 +3607,6 @@ int main(int argc, char *argv[]) {
     /* Check for events */
     inc_ang2 = INC_ANG;
     status = FALSE;
-    //    printf("%g ",zoom);fflush(stdout);
     if (!delay && option.anim == TRUE)
       delay = val_run.delay * 10;
 
@@ -3776,12 +3699,10 @@ int main(int argc, char *argv[]) {
         if (option.trace) {
           sw_trace = nextblock;
           /* freeing memory  */
-          //      DrawTracePuntos(screen,window,universe,0,0);
         }
         option.trace++;
         if (option.trace > 2)
           option.trace = 0;
-        //  option.trace=(option.trace==TRUE) ? FALSE : TRUE;
         actualizar = TRUE;
         kp.t = FALSE;
       }
@@ -3990,7 +3911,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (kp.space == TRUE) {
-      //      option.anim=FALSE;
       kp.space = FALSE;
     }
 
@@ -4013,14 +3933,10 @@ int main(int argc, char *argv[]) {
 
 void DrawInfo(SDL_Surface *screen, struct Window win, struct Universe u,
               struct DataFile df) {
-  // void DrawInfo(SDL_Surface *screen, struct Window win,struct Universe
-  // u,Uint32 background){
-  //  int mouse_x,mouse_y;
   int x;
   float y;
   int fs = FONTSIZE;
 
-  /*      int fw=fs+3; */
   int fh = (fs + 1) * 2 + 3;
   char num[MAX_WORD_LEN] = "";
 
@@ -4052,22 +3968,13 @@ void DrawInfo(SDL_Surface *screen, struct Window win, struct Universe u,
 
   x = DrawText(screen, num, x, fh * 2 + 9, ledcolor);
 
-  /*    SDL_GetMouseState(&mouse_x, &mouse_y); */
-  /*    snprintf(num,MAX_WORD_LEN,"%d",mouse_x); */
-  /*    x=DrawText(screen,num,5,win.h-40,ledcolor); */
-  /*    snprintf(num,MAX_WORD_LEN,"%d",mouse_y); */
-  /*    x=DrawText(screen,num,5+x,win.h-40,ledcolor); */
-
   if (option.fast == FALSE) {
-    //    if(option.comment==TRUE)
-    //    x=DrawText(screen,comment,5,win.h-20,ledcolor);
     if (option.real_color)
       DrawScale(screen, colortable, ledcolor, val_run, 10, 60);
   }
 }
 
 void MovePuntos(struct Universe u, struct Parametres par, struct Punto *p) {
-  // void MovePuntos(struct Universe u,struct Punto *p){
   long n1, n2;
   static int cont;
 
@@ -4144,7 +4051,6 @@ void DrawAll(SDL_Surface *screen, struct Window win, struct Universe u,
       u.cw.y = (y)*u.zoom + (double)win.h / 2. * (1. - u.zoom);
     }
     if (option.fast == FALSE) {
-      //      printf("%f %f\n",u.escale.x,u.zoom);
       DrawPuntos(screen, win, u, punto, tabla, u.cw, u.escale.x * u.zoom, par,
                  val_run);
 
@@ -4267,11 +4173,8 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
           if (radio > val_run.max_r)
             radio = val_run.max_r;
         }
-        //  printf("%f %f %f\n",radio,z,u.zoom_size);
-
         sizeidx = (int)(radio * z * u.zoom_size);
       }
-      //     printf("%d ",sizeidx);
     }
     if (sizeidx > max_nsize)
       sizeidx = max_nsize;
@@ -4284,8 +4187,6 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
 
     idx = coloridx + MAX_NSCOLORS * sizeidx;
 
-    //     printf("n: %d  IDX:%d option_type:%d
-    //     size_idx:%d\n",i,idx,option.type,sizeidx);
     bola[idx].cont = Cont;
     bola[idx].time = time;
 
@@ -4349,19 +4250,6 @@ void DrawPuntos(SDL_Surface *screen, struct Window w, struct Universe u,
     }
   }
 
-  /*    posx=0;  */
-  /*    posy=20;  */
-
-  /*    for(i=0;i<numsprites;i++){   */
-  /*      if(bola[i].on==TRUE){  */
-  /*        position.x =posx;  */
-  /*        position.y =posy;  */
-  /*        SDL_BlitSurface(bola[i].surface, NULL, screen, &position);  */
-  /*        posx+=10;  */
-  /*        if(posx>620){posx=0;posy+=50;}  */
-  /*      }  */
-  /*    }  */
-
   if (option.verbose > 1)
     printf("m: %ldkB t:%d z:%f\n", total_memory / 1024, (int)(time / 1000), z);
 
@@ -4423,7 +4311,6 @@ void DrawTracePuntos(SDL_Surface *screen, struct Window w, struct Universe u,
         trace_cont = ntrace;
     } else {
       DrawTracePuntos(screen, w, u, par, z, 0);
-      //      return(0);
     }
 
     block = nextblock;
@@ -4702,7 +4589,6 @@ void PurgeSprites(struct Sprite *b, int type) {
   Uint32 time, mintime;
 
   time = SDL_GetTicks();
-  //  printf("time:%lu\n",time);
   mintime = time - 2000;
   if (time < 2000)
     mintime = 0;
@@ -4722,7 +4608,6 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize), i);
-        //  total_memory-=(i%max_nsize)*(i%max_nsize)*16;
         total_memory -=
             ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         cont1++;
@@ -4730,13 +4615,11 @@ void PurgeSprites(struct Sprite *b, int type) {
         cont2++;
       }
     }
-    //    printf("cont:%d %d %d\n",cont1,cont2,cont3);
     break;
 
   case 1:
     for (i = 0; i < numsprites; i++) {
       if (b[i].on == TRUE) {
-        //  printf("%d %ld\n",i,b[i].surface);
         b[i].on = FALSE;
         b[i].cont = 0;
         b[i].time = 0;
@@ -4751,10 +4634,6 @@ void PurgeSprites(struct Sprite *b, int type) {
 
   case 2:
     for (i = 0; i < numsprites; i++) {
-      // for(j=0;j<64;j++){
-      //      i=(int)((float)rand()/RAND_MAX*(max_nsize+1)*(MAX_NSCOLORS));
-      // printf("i:%d\n",i);
-      //    printf("Purge 2: %d\n",Cont);
       if (b[i].on == TRUE) {
         if (!(rand() % 40)) {
           b[i].on = FALSE;
@@ -4765,7 +4644,6 @@ void PurgeSprites(struct Sprite *b, int type) {
           if (option.verbose > 1)
             printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize),
                    i);
-          //    total_memory-=(i%max_nsize)*(i%max_nsize)*16;
           total_memory -=
               ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         }
@@ -4785,13 +4663,11 @@ void PurgeSprites(struct Sprite *b, int type) {
         b[i].surface = NULL;
         if (option.verbose > 1)
           printf(" (%d)<%d+%d=%d ", i, i % max_nsize, (int)(i / max_nsize), i);
-        //  total_memory-=(i%max_nsize)*(i%max_nsize)*16;
         total_memory -=
             ((float)i / MAX_NSCOLORS) * ((float)i / MAX_NSCOLORS) * 16;
         continit++;
       }
     }
-    //    printf("continit: %d %d %d\n",continit,init,i);
     init = i;
     if (i > numsprites - 1)
       init = 0;
@@ -4831,7 +4707,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
   static int lastblock = -1; /* last block readed */
   static int maxblock = 0;   /* max number block  */
 
-  //  char line[MAX_LINE_LEN];
   struct Block *b;
   char line[MAX_LINE_LEN];
   long rbytes;
@@ -4848,7 +4723,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
     return (p);
   }
 
-  //  printf("next: %d lblock:%d  mb:%d\n",*next,lastblock,maxblock);
   *status = TRUE;
   /* the first time check the size of the file */
 
@@ -4880,8 +4754,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
 
   /* go to the n=next block */
 
-  ////    kEOF=FALSE;    //!!!!!
-
   if ((*next - lastblock != 1 || maxblock <= lastblock)) {
     if (fseek(df.fp, b->pos, SEEK_SET) == -1)
       printf("ERROR Seeking file\n");
@@ -4891,10 +4763,8 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
   do {
     rbytes = RLine(line, MAX_LINE_LEN, df.fp);
     linecont++;
-    //    printf("%d:%s\n",linecont,line);
 
     typeline = AnalizeLine(line);
-    //    printf("type: %d -- %s  (%d)\n",typeline,line,rbytes);
     if (typeline == COMMENT && sw == 0) { /* copy the first comment */
       strncpy(comentario, line, MAX_WORD_LEN);
       comment = comentario;
@@ -4908,7 +4778,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
     if (sw) {
       rbytes = RLine(line, MAX_LINE_LEN, df.fp);
       linecont++;
-      //      printf("%d:%s\n",linecont,line);
 
       typeline = AnalizeLine(line);
     }
@@ -4959,7 +4828,6 @@ struct Punto *ReadBlock(int *next, struct DataFile df, struct PosCol pos,
       perror("realloc");
       exit(EXIT_FAILURE);
     }
-    // printf("asignando %ld a tabla. numact: %ld\n",max_N,*numact);
     for (i = *numact; i < (size_t)max_N + 1; i++)
       tabla[i] = i;
   }
@@ -5382,7 +5250,6 @@ void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
   /*
      Set the program values from the data values
    */
-  /*    float max_r,min_r; */
   val->max_r = val_d.max_r;
   val->min_r = val_d.min_r;
   if (opt.radio == TRUE) {
@@ -5392,7 +5259,6 @@ void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
     }
   }
 
-  /*    float max_c,min_c; */
   val->max_c = val_d.max_c;
   val->min_c = val_d.min_c;
   if (opt.real_color == TRUE) {
@@ -5404,7 +5270,6 @@ void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
     }
   }
 
-  /*    float max_f,min_f; */
   if (opt.field == TRUE) {
     val->max_f = val_d.max_f;
     val->min_f = val_d.min_f;
@@ -5504,7 +5369,7 @@ int GetColumns(char *str, int ncolf, int *p_col) {
     }
   }
   return (n);
-} //   if(option.column==TRUE)
+}
 
 void OrderOfColumns(struct Options opt, int d, int ncol, int noptc, int *posc,
                     struct PosCol *p) {
