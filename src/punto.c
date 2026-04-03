@@ -256,7 +256,6 @@ void GetFileName(int, char **, char *);
 int NumRet(FILE *);
 long CountLines(char *);
 int NColumns(char *);
-int FindChain(char *target, char *cad[], int n);
 int AnalizeLine(char *cad);
 long SizeFile(char *);
 struct Block *CreateBlock(void);
@@ -562,17 +561,6 @@ int NColumns(char *fname)
   } while (sw == 0);
   fclose(fp);
   return (np);
-}
-
-int FindChain(char *target, char *cad[], int n) {
-  int i;
-
-  for (i = 0; i < n; i++) {
-    if (strncmp(target, cad[i], MAX_WORD_LEN) == 0) {
-      return (i);
-    }
-  }
-  return (-1);
 }
 
 int AnalizeLine(char *cad) {
@@ -3728,370 +3716,173 @@ int NextBlock(float x, char *fn) {
 }
 
 
+enum { A_NONE, A_FLAG, A_INT, A_STR, A_RANGE, A_GEOM };
+
+#define NOOFF ((size_t)-1)
+
+struct Arg {
+  char *name;
+  int type;
+  size_t flag;  /* offsetof into struct Options, NOOFF = none */
+  size_t dst;   /* offsetof into struct Parametres, NOOFF = none */
+};
+
+static int parserange(char *s, void *dst) {
+  float *f = dst;
+  char *p = strchr(s, ':');
+  if (!p)
+    return -1;
+  f[0] = strtod(s, NULL);
+  f[1] = strtod(p + 1, NULL);
+  return 0;
+}
+
+static int parsegeom(char *s, int *w, int *h) {
+  char *p = strchr(s, 'x');
+  if (!p)
+    p = strchr(s, ':');
+  if (!p)
+    return -1;
+  *w = strtol(s, NULL, 10);
+  *h = strtol(p + 1, NULL, 10);
+  return *w > 0 && *h > 0 ? 0 : -1;
+}
+
+#define O(f) offsetof(struct Options, f)
+#define P(f) offsetof(struct Parametres, f)
+
+static struct Arg argtab[] = {
+  {"h",        A_FLAG,  NOOFF,        NOOFF},
+  {"s",        A_INT,   O(size),      P(size)},
+  {"size",     A_INT,   O(size),      P(size)},
+  {"d",        A_INT,   O(pausa),     P(pausa)},
+  {"t",        A_INT,   NOOFF,        NOOFF},
+  {"p",        A_INT,   NOOFF,        NOOFF},
+  {"D",        A_INT,   O(dimension), P(dimension)},
+  {"trace",    A_INT,   O(trace),     P(ntrace)},
+  {"c",        A_FLAG,  O(color),     NOOFF},
+  {"color",    A_FLAG,  O(color),     NOOFF},
+  {"V",        A_FLAG,  O(field),     NOOFF},
+  {"P",        A_FLAG,  O(periodic),  NOOFF},
+  {"verbose",  A_FLAG,  O(verbose),   NOOFF},
+  {"r",        A_RANGE, O(radio),     P(min_r)},
+  {"radio",    A_RANGE, O(radio),     P(min_r)},
+  {"G",        A_RANGE, O(gradient),  P(min_c)},
+  {"w",        A_RANGE, O(gradient),  P(min_c)},
+  {"n",        A_RANGE, O(number),    NOOFF},
+  {"g",        A_GEOM,  O(geometria), P(width)},
+  {"geom",     A_GEOM,  O(geometria), P(width)},
+  {"geometry", A_GEOM,  O(geometria), P(width)},
+  {"z",        A_STR,   O(column),    P(colstr)},
+  {"e",        A_STR,   O(exit),      P(path)},
+  {"bg",       A_STR,   O(back),      P(backname)},
+  {"fg",       A_STR,   O(fore),      P(forename)},
+  {"lc",       A_STR,   O(led),       P(ledname)},
+  {"F",        A_STR,   O(file),      P(rootfilename)},
+  {"T",        A_STR,   O(title),     P(titlewindow)},
+  {"B",        A_STR,   O(box),       NOOFF},
+  {NULL,       A_NONE,  NOOFF,        NOOFF},
+};
+
+#undef O
+#undef P
+
 int Arguments(int argc, char *argv[], struct Options *opt,
-              struct Parametres *par)
-{
+              struct Parametres *par) {
   int i;
-  char c;
-  int sw = 0;
-  char *pointer;
-  char *endptr = NULL;
-  static char str[MAX_WORD_LEN] = "",
-              str0[MAX_WORD_LEN] = "";
-  int flag = 0;
-  int narg;
-  char arg[MAX_WORD_LEN] = "";
-  char pal[MAX_WORD_LEN] = "";
+  struct Arg *a;
+  char *arg, *val;
 
-  char *validargum[] = {"h",        "s",       "size", "n",     "g",     "geom",
-                        "geometry", "d",       "e",    "r",     "radio", "c",
-                        "color",    "w",       "G",    "p",     "B",     "D",
-                        "t",        "z",       "V",    "bg",    "fg",    "F",
-                        "lc",       "verbose", "T",    "trace", "P"};
-  int NUMARGS = 28;
+  if (argc < 2)
+    return 1;
 
-  if (argc < 2) {
-    return (1);
-  }
+  memset(par, 0, sizeof *par);
 
-  strncpy(par->colstr, "\0", (size_t)1);
-  strncpy(par->boxstr, "\0", (size_t)1);
+  for (i = 1; i < argc - 1; i++) {
+    if (argv[i][0] != '-')
+      continue;
+    arg = argv[i] + 1;
 
-  strncpy(par->backname, "\0", (size_t)1);
-  strncpy(par->forename, "\0", (size_t)1);
-  strncpy(par->ledname, "\0", (size_t)1);
-  strncpy(par->rootfilename, "\0", (size_t)1);
-  strncpy(par->titlewindow, "\0", (size_t)1);
+    for (a = argtab; a->name; a++)
+      if (strcmp(arg, a->name) == 0)
+        break;
+    if (!a->name) {
+      fprintf(stderr, "punto: unknown option -%s\n", arg);
+      return 1;
+    }
 
-  par->size = 0;
-  par->pausa = 0;
-  par->N = 0;
-  par->N1 = 0;
-  par->N2 = 0;
-  par->ntrace = 0;
-  par->dimension = 0;
-  par->width = 0;
-  par->height = 0;
-  par->max_r = 0;
-  par->min_r = 0;
-  par->max_c = 0;
-  par->min_c = 0;
-  par->max_f = 0;
-  par->min_f = 0;
-  par->zoomz = 0;
-
-  for (i = 0; i < argc; i++) {
-    if (*argv[i] == '-') {
-
-      strncpy(arg, &argv[i][1], MAX_WORD_LEN);
-      strncpy(&arg[MAX_WORD_LEN - 1], "\0", (size_t)1);
-      flag = 0;
-      c = '0';
-      if (i + 1 < argc) {
-        c = argv[i + 1][0];
-        if (c != '-') {
-          strncpy(pal, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&pal[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        } else
-          strncpy(pal, "\0", (size_t)1);
-      }
-      if (c == ' ' || c == '\0')
-        break;
-      if (flag)
-        break;
-
-      if ((narg = FindChain(arg, validargum, NUMARGS)) < 0) {
-        printf("\ninvalid opt -- %s\n", arg);
-        printf("\ntry 'punto -h' for help\n");
-        exit(EXIT_FAILURE);
-      }
-      c = arg[0];
-      switch (c) {
-      case 'z':
-        if (strncmp("z", arg, MAX_WORD_LEN) == 0) { // choose columns
-          opt->column = TRUE;
-          strncpy(par->colstr, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->colstr[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 't':
-        if (strncmp("t", arg, MAX_WORD_LEN) == 0) { // type of punto
-          opt->type = strtol(argv[i + 1], &endptr, 10);
-          if (opt->type == 0 && argv[i + 1] == endptr) {
-            opt->type = DEFAULTTYPE;
-            fprintf(
-                stderr,
-                "Warning: -t option must have an argument. Setting default.\n");
-          }
-        }
-
-        if (strncmp("trace", arg, MAX_WORD_LEN) == 0) { // trace points on
-          opt->trace = TRUE;
-          par->ntrace = (int)strtol(argv[i + 1], NULL, 10);
-          if (par->ntrace > 0 && par->ntrace <= TRACE_MAX)
-            opt->ntrace = TRUE;
-        }
-        break;
-      case 's':
-        if (strncmp("s", arg, MAX_WORD_LEN) == 0 ||
-            strncmp("size", arg, MAX_WORD_LEN) == 0) { // size of puntos
-          opt->size = TRUE;
-          par->size = strtol(argv[i + 1], &endptr, 10);
-          if (par->size == 0 && argv[i + 1] == endptr) {
-            opt->size = FALSE;
-            fprintf(
-                stderr,
-                "Warning: -s option must have an argument. Setting default.\n");
-          }
-        }
-        break;
-      case 'h':
-        if (strncmp("h", arg, MAX_WORD_LEN) == 0) { // show help
-          return (2);
-        }
-        break;
-      case 'n':
-        sw = 0;
-        if (strncmp("n", arg, MAX_WORD_LEN) == 0) { // selected puntos
-          strncpy(str, str0, MAX_WORD_LEN);
-          strncpy(&str[MAX_WORD_LEN - 1], "\0", (size_t)1);
-          pointer = strchr(argv[i + 1], ':');
-          if (pointer) {
-            strncpy(str, argv[i + 1], strlen(argv[i + 1]) - strlen(pointer));
-            par->N1 = strtol(str, &endptr, 10);
-            if (par->N1 == 0 && str == endptr) {
-              sw++;
-            }
-            par->N2 = strtol(pointer + 1, &endptr, 10);
-            if (par->N2 == 0 && (pointer + 1) == endptr) {
-              sw++;
-            }
-            i++;
-          } else {
-            sw++;
-          }
-          if (sw == 0) {
-            if (par->N1 >= par->N2)
-              sw++;
-          }
-          if (sw == 0) {
-            opt->number = TRUE;
-          } else {
-            fprintf(stderr,
-                    "Warning: -n option bad formed. Plotting all puntos.\n");
-          }
-        }
-        break;
-      case 'g':
-        sw = 0;
-        if (strncmp("g", arg, MAX_WORD_LEN) == 0 || // geometry of the window
-            strncmp("geom", arg, MAX_WORD_LEN) == 0 ||
-            strncmp("geometry", arg, MAX_WORD_LEN) == 0) {
-          strncpy(str, str0, MAX_WORD_LEN);
-          strncpy(&str[MAX_WORD_LEN - 1], "\0", (size_t)1);
-          pointer = strchr(argv[i + 1], 'x');
-          if (pointer == NULL)
-            pointer = strchr(argv[i + 1], ':');
-          if (pointer) {
-            strncpy(str, argv[i + 1], strlen(argv[i + 1]) - strlen(pointer));
-            par->width = strtol(str, &endptr, 10);
-            if (par->width == 0 && str == endptr) {
-              sw++;
-            }
-            par->height = strtol(pointer + 1, &endptr, 10);
-            if (par->height == 0 && pointer + 1 == endptr) {
-              sw++;
-            }
-            i++;
-          }
-
-          if (sw == 0) {
-            opt->geometria = TRUE;
-          } else {
-            fprintf(stderr,
-                    "Warning: -g option bad formed. Using default values.\n");
-          }
-        }
-        break;
-      case 'd':
-        if (strncmp("d", arg, MAX_WORD_LEN) == 0) { // delay between frames
-          opt->pausa = TRUE;
-          par->pausa = strtol(argv[i + 1], &endptr, 10);
-          if (par->pausa == 0 && argv[i + 1] == endptr) {
-            opt->pausa = FALSE;
-            fprintf(
-                stderr,
-                "Warning: -d option must have an argument. Setting default.\n");
-          }
-        }
-        break;
-      case 'c':
-        if (strncmp("c", arg, MAX_WORD_LEN) == 0 || // there is a color column
-            strncmp("color", arg, MAX_WORD_LEN) == 0) {
-          opt->color = TRUE;
-        }
-        break;
-      case 'r':
-        if (strncmp("r", arg, MAX_WORD_LEN) == 0 || // there is a radio column
-            strncmp("radio", arg, MAX_WORD_LEN) == 0) {
-          opt->radio = TRUE;
-          strncpy(str, str0, MAX_WORD_LEN);
-          strncpy(&str[MAX_WORD_LEN - 1], "\0", (size_t)1);
-          par->max_r = par->min_r = 0;
-
-          pointer = strchr(argv[i + 1], ':');
-          if (pointer) {
-            strncpy(str, argv[i + 1], strlen(argv[i + 1]) - strlen(pointer));
-            par->min_r = (float)strtod(str, NULL);
-            par->max_r = (float)strtod(pointer + 1, NULL);
-            i++;
-          }
-        }
-        break;
-      case 'D':
-        if (strncmp("D", arg, MAX_WORD_LEN) == 0) { // Dimension
-          opt->dimension = TRUE;
-          par->dimension = (int)strtod(argv[i + 1], NULL);
-        }
-        break;
-      case 'B':
-        if (strncmp("B", arg, MAX_WORD_LEN) == 0) { // show a border box
-          pointer = strchr(argv[i + 1], ':');
-          if (pointer) {
-            strncpy(par->boxstr, argv[i + 1], MAX_WORD_LEN);
-            strncpy(&par->boxstr[MAX_WORD_LEN - 1], "\0", (size_t)1);
-            opt->sizebox = TRUE;
-            i++;
-          }
-          opt->box = TRUE;
-        }
-        break;
-      case 'w':
-      case 'G':
-        if (strncmp("G", arg, MAX_WORD_LEN) == 0 ||
-            strncmp("w", arg, MAX_WORD_LEN) == 0) { // Gradient scale
-          strncpy(str, str0, MAX_WORD_LEN);
-          strncpy(&str[MAX_WORD_LEN - 1], "\0", (size_t)1);
-          pointer = strchr(argv[i + 1], ':');
-          par->max_c = par->min_c = 0;
-          if (pointer) {
-            strncpy(str, argv[i + 1], strlen(argv[i + 1]) - strlen(pointer));
-            par->min_c = (float)strtod(argv[i + 1], NULL);
-            par->max_c = (float)strtod(pointer + 1, NULL);
-            flag = 1;
-            i++;
-          }
-          opt->gradient = TRUE;
-          opt->color = TRUE;
-        }
-        break;
-      case 'p':
-        if (strncmp("p", arg, MAX_WORD_LEN) == 0) { // choose color palette
-          opt->palette = strtol(argv[i + 1], &endptr, 10);
-          if (opt->palette == 0 && argv[i + 1] == endptr) {
-            opt->palette = DEFAULTPALETTE;
-            fprintf(
-                stderr,
-                "Warning: -p option must have an argument. Setting default.\n");
-          }
-        }
-        break;
-      case 'V':
-        if (strncmp("V", arg, MAX_WORD_LEN) == 0) { // Vector field
-          strncpy(str, str0, MAX_WORD_LEN);
-          strncpy(&str[MAX_WORD_LEN - 1], "\0", (size_t)1);
-          pointer = strchr(argv[i + 1], ':');
-          par->max_f = par->min_f = 0;
-          sw = 0;
-          if (pointer) {
-            strncpy(str, argv[i + 1], strlen(argv[i + 1]) - strlen(pointer));
-            par->min_f = (float)strtod(argv[i + 1], &endptr);
-            if (par->min_f == 0 && argv[i + 1] == endptr)
-              sw++;
-            par->max_f = (float)strtod(pointer + 1, &endptr);
-            if (par->max_f == 0 && pointer + 1 == endptr)
-              sw++;
-            if (sw == 0) {
-              flag = 1;
-              opt->fieldcom = TRUE;
-            } else {
-              fprintf(stderr,
-                      "Warning: -V option bad formed. Using default values.\n");
-            }
-            i++;
-          }
-          opt->field = TRUE;
-        }
-        break;
-      case 'e':
-        if (strncmp("e", arg, MAX_WORD_LEN) == 0) {
-          if (argv[i + 1] == NULL) {
-            fprintf(stderr, "-e needs and argument");
-            exit(1);
-          }
-          opt->exit = TRUE;
-          strncpy(par->path, argv[i + 1], MAX_WORD_LEN);
-        }
-        break;
-      case 'v':
-        if (strncmp("verbose", arg, MAX_WORD_LEN) == 0) { // verbose
-          opt->verbose++;
-        }
-        break;
-      case 'b':
-        if (strncmp("bg", arg, MAX_WORD_LEN) == 0) { // background color
-          opt->back = TRUE;
-          strncpy(par->backname, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->backname[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 'f':
-        if (strncmp("fg", arg, MAX_WORD_LEN) == 0) { // foreground color
-          opt->fore = TRUE;
-          strncpy(par->forename, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->forename[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 'l':
-        if (strncmp("lc", arg, MAX_WORD_LEN) == 0) { // led color
-          opt->led = TRUE;
-          strncpy(par->ledname, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->ledname[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 'F':
-        if (strncmp("F", arg, MAX_WORD_LEN) ==
-            0) { // root file name to save pixmaps
-          opt->file = TRUE;
-          strncpy(par->rootfilename, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->rootfilename[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 'T':
-        if (strncmp("T", arg, MAX_WORD_LEN) == 0) {
-          opt->title = TRUE;
-          strncpy(par->titlewindow, argv[i + 1], MAX_WORD_LEN);
-          strncpy(&par->titlewindow[MAX_WORD_LEN - 1], "\0", (size_t)1);
-        }
-        break;
-      case 'P':
-        if (strncmp("P", arg, MAX_WORD_LEN) == 0) {
-          opt->periodic = TRUE;
-        }
-        break;
-      default:
-        break;
+    val = NULL;
+    if (a->type != A_FLAG && i + 1 < argc - 1) {
+      if (a->type == A_RANGE) {
+        if (strchr(argv[i + 1], ':'))
+          val = argv[++i];
+      } else {
+        val = argv[++i];
       }
     }
+    if ((a->type == A_INT || a->type == A_STR || a->type == A_GEOM) && !val) {
+      fprintf(stderr, "punto: -%s needs argument\n", arg);
+      return 1;
+    }
+
+    if (strcmp(arg, "h") == 0)
+      return 2;
+
+    if (a->flag != NOOFF)
+      *(short *)((char *)opt + a->flag) = TRUE;
+
+    switch (a->type) {
+    case A_FLAG:
+      if (strcmp(arg, "verbose") == 0)
+        opt->verbose++;
+      break;
+    case A_INT:
+      if (a->dst != NOOFF)
+        *(int *)((char *)par + a->dst) = strtol(val, NULL, 10);
+      if (strcmp(arg, "t") == 0)
+        opt->type = strtol(val, NULL, 10);
+      else if (strcmp(arg, "p") == 0)
+        opt->palette = strtol(val, NULL, 10);
+      else if (strcmp(arg, "trace") == 0 && par->ntrace > 0 && par->ntrace <= TRACE_MAX)
+        opt->ntrace = TRUE;
+      break;
+    case A_STR:
+      if (a->dst != NOOFF)
+        snprintf((char *)par + a->dst, MAX_WORD_LEN, "%s", val);
+      if (strcmp(arg, "B") == 0 && val && strchr(val, ':'))
+        opt->sizebox = TRUE;
+      break;
+    case A_RANGE:
+      if (strcmp(arg, "n") == 0) {
+        if (!val || sscanf(val, "%ld:%ld", &par->N1, &par->N2) != 2 || par->N1 >= par->N2) {
+          opt->number = FALSE;
+          fprintf(stderr, "punto: -n bad range\n");
+        }
+      } else if (val) {
+        if (a->dst != NOOFF)
+          parserange(val, (char *)par + a->dst);
+        if (strcmp(arg, "V") == 0)
+          opt->fieldcom = TRUE;
+      }
+      if (strcmp(arg, "G") == 0 || strcmp(arg, "w") == 0)
+        opt->color = TRUE;
+      break;
+    case A_GEOM:
+      if (parsegeom(val, (int *)((char *)par + a->dst),
+                    (int *)((char *)par + a->dst) + 1) != 0) {
+        opt->geometria = FALSE;
+        fprintf(stderr, "punto: -%s bad geometry\n", arg);
+      }
+      break;
+    }
   }
-  if (opt->gradient == TRUE)
+  if (opt->gradient)
     opt->real_color = TRUE;
-  if (opt->real_color == TRUE)
+  if (opt->real_color)
     opt->color = TRUE;
-  if (opt->field) {
+  if (opt->field)
     opt->radio = FALSE;
-  }
-  return (0);
+  return 0;
 }
 
 void SetValues(struct Values val_d, struct Parametres par, struct Options opt,
